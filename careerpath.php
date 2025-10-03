@@ -1,8 +1,16 @@
 <?php
 session_start();
 
-include 'db_connect.php';
+/ DB connection
+$servername = "localhost";
+$dbusername = "root";
+$dbpassword = "";
+$dbname     = "careerguidance";
 
+$conn = new mysqli($servername, $dbusername, $dbpassword, $dbname, 3307);
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
+}
 // Check login state
 $isLoggedIn = isset($_SESSION['fullName']);
 $fullName   = $isLoggedIn ? $_SESSION['fullName'] : null;
@@ -177,10 +185,10 @@ $fullName   = $isLoggedIn ? $_SESSION['fullName'] : null;
         if (input.files[0]) formData.append("certificateFiles[]", input.files[0]);
       });
 
-      const response = await fetch("https://python-api-k98f.onrender.com/ocrPredict", {
-          method: "POST",
-          body: formData
-        });
+      const response = await fetch("http://127.0.0.1:8000/ocrPredict", {
+        method: "POST",
+        body: formData
+      });
 
       if (!response.ok) throw new Error("❌ API request failed.");
 

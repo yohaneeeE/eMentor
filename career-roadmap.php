@@ -1,7 +1,17 @@
 <?php
 session_start();
 
-include 'db_connect.php';
+// DB connection (adjust as needed)
+$servername = "localhost";
+$dbusername = "root";
+$dbpassword = "";
+$dbname = "careerguidance";
+
+$conn = new mysqli($servername, $dbusername, $dbpassword, $dbname, 3307);
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
+}
+
 // Get career_id from GET, validate
 if (!isset($_GET['career_id']) || !is_numeric($_GET['career_id'])) {
     die("Invalid career ID.");
@@ -31,8 +41,20 @@ while ($row = $roadmap_result->fetch_assoc()) {
     $roadmap_steps[] = $row;
 }
 $stmt->close();
-$conn->close();
 
+// Fetch certificates for this career
+$stmt = $conn->prepare("SELECT certificate_title, provider, description, skills FROM certificates WHERE career_id = ?");
+$stmt->bind_param("i", $career_id);
+$stmt->execute();
+$cert_result = $stmt->get_result();
+
+$certificates = [];
+while ($row = $cert_result->fetch_assoc()) {
+    $certificates[] = $row;
+}
+$stmt->close();
+
+$conn->close();
 ?>
 
 <!DOCTYPE html>
@@ -112,6 +134,32 @@ $conn->close();
         color: #333;
         line-height: 1.4;
     }
+    .certificate {
+        background: #fffbea;
+        border-left: 6px solid #ffcc00;
+        padding: 20px 25px;
+        margin-bottom: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    .cert-title {
+        font-weight: 600;
+        font-size: 1.2rem;
+        color: #cc8800;
+        margin-bottom: 6px;
+    }
+    .cert-provider {
+        font-size: 0.95rem;
+        font-style: italic;
+        margin-bottom: 8px;
+    }
+    .cert-description {
+        margin-bottom: 6px;
+    }
+    .cert-skills {
+        font-size: 0.95rem;
+        color: #444;
+    }
     a.back-link {
         display: inline-block;
         margin-top: 30px;
@@ -139,6 +187,7 @@ $conn->close();
   <div class="category"><?= htmlspecialchars($career['category']) ?></div>
   <div class="description"><?= nl2br(htmlspecialchars($career['description'])) ?></div>
 
+  <h3>📍 Roadmap</h3>
   <?php if (empty($roadmap_steps)): ?>
     <p style="color:#999; font-style: italic;">No roadmap steps available yet for this career.</p>
   <?php else: ?>
@@ -147,6 +196,20 @@ $conn->close();
         <div class="step-number">Step <?= $step['step_number'] ?></div>
         <div class="step-title"><?= htmlspecialchars($step['step_title']) ?></div>
         <div class="step-description"><?= nl2br(htmlspecialchars($step['step_detail'])) ?></div>
+      </div>
+    <?php endforeach; ?>
+  <?php endif; ?>
+
+  <h3>🎓 Recommended Certificates</h3>
+  <?php if (empty($certificates)): ?>
+    <p style="color:#999; font-style: italic;">No certificates available yet for this career.</p>
+  <?php else: ?>
+    <?php foreach ($certificates as $cert): ?>
+      <div class="certificate">
+        <div class="cert-title"><?= htmlspecialchars($cert['certificate_title']) ?></div>
+        <div class="cert-provider">Offered by <?= htmlspecialchars($cert['provider']) ?></div>
+        <div class="cert-description"><?= nl2br(htmlspecialchars($cert['description'])) ?></div>
+        <div class="cert-skills"><strong>Skills:</strong> <?= htmlspecialchars($cert['skills']) ?></div>
       </div>
     <?php endforeach; ?>
   <?php endif; ?>
