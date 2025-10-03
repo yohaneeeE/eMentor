@@ -1,7 +1,7 @@
 <?php
 $host = 'localhost';
 $port = '3307';
-$dbname = 'careerguidance';
+$dbname = 'em_mentor';
 $user = 'root';
 $pass = '';
 

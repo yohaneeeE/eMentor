@@ -1,7 +1,6 @@
 <?php
 session_start();
 
-// DB connection (same as login file)
 include 'db_connect.php';
 
 // Check login state
@@ -71,33 +70,30 @@ $fullName = $isLoggedIn ? $_SESSION['fullName'] : null;
     }
 
     nav {
-      background-color: #003060;
-      padding: 15px 0;
-      position: sticky;
-      top: 0;
-      z-index: 100;
+        background-color: #003060;
+        padding: 15px 0;
+        position: sticky;
+        top: 0;
+        z-index: 100;
     }
-
     nav ul {
-      list-style: none;
-      display: flex;
-      justify-content: center;
-      gap: 30px;
-      flex-wrap: wrap;
+        list-style: none;
+        display: flex;
+        justify-content: center;
+        gap: 30px;
+        flex-wrap: wrap;
     }
-
     nav ul li a {
-      color: white;
-      text-decoration: none;
-      font-weight: 600;
-      transition: all 0.3s ease;
-      padding: 8px 15px;
-      border-radius: 5px;
+        color: white;
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        padding: 8px 15px;
+        border-radius: 5px;
     }
-
     nav ul li a:hover {
-      color: #ffcc00;
-      background-color: rgba(255, 255, 255, 0.1);
+        color: #ffcc00;
+        background-color: rgba(255, 255, 255, 0.1);
     }
 
     .container {

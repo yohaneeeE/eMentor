@@ -1,8 +1,7 @@
 <?php
-// Use explicit TCP loopback and the typical XAMPP MySQL port; change if your setup differs.
-$host = '127.0.0.1';
-$port = 3306; // default MySQL port for XAMPP
-$db   = 'em_mentor'; // CHANGE to your DB name
+$host = 'localhost';
+$port = 3307; // added port variable
+$db   = 'careerguidance';
 $user = 'root';
 $pass = '';
 $charset = 'utf8mb4';
@@ -15,25 +14,19 @@ $options = [
     PDO::ATTR_EMULATE_PREPARES   => false,
 ];
 
-$totalUsers = 0;
-$totalCareers = 0;
-
 try {
     $pdo = new PDO($dsn, $user, $pass, $options);
 
     // Fetch total users
-    $stmt = $pdo->query('SELECT COUNT(*) FROM users');
-    $totalUsers = (int) $stmt->fetchColumn();
+    $stmt = $pdo->query('SELECT COUNT(*) as total_users FROM users');
+    $totalUsers = $stmt->fetch()['total_users'];
 
     // Fetch total careers
-    $stmt = $pdo->query('SELECT COUNT(*) FROM careers');
-    $totalCareers = (int) $stmt->fetchColumn();
+    $stmt = $pdo->query('SELECT COUNT(*) as total_careers FROM careers');
+    $totalCareers = $stmt->fetch()['total_careers'];
 
 } catch (\PDOException $e) {
-    // Log the real error for debugging and avoid exposing details to users
-    error_log('Database connection/query error in dashboard.php: ' . $e->getMessage());
-    // Leave $totalUsers and $totalCareers as 0 so page renders without fatal error
-    $pdo = null;
+    throw new \PDOException($e->getMessage(), (int)$e->getCode());
 }
 ?>
 <!DOCTYPE html>
@@ -206,14 +199,17 @@ try {
         <p>Manage and monitor your Career Trends platform</p>
     </header>
 
-    <nav>
-        <ul>
-            <li><a href="dashboard.php" class="active">Dashboard</a></li>
-            <li><a href="admin-users.php">User Management</a></li>
-            <li><a href="admin-content.php">Content Management</a></li>
-        <li><a href="../logout.php">Logout</a></li>
-        </ul>
-    </nav>
+<nav>
+    <ul>
+        <li><a href="dashboard.php">Dashboard</a></li>
+        <li><a href="admin-users.php">User Management</a></li>
+        <li><a href="admin-content.php">Career Content</a></li>
+        <li><a href="admin-certificates.php">Certificates</a></li>
+        <li><a href="admin-roadmaps.php">Career Roadmaps</a></li>
+        <li><a href="logout.php">Logout</a></li>
+    </ul>
+</nav>
+
 
     <div class="container">
         <h2>System Overview</h2>

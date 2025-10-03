@@ -2,6 +2,8 @@
 session_start();
 
 include 'db_connect.php';
+
+
 // Check login state
 $isLoggedIn = isset($_SESSION['fullName']);
 $fullName = $isLoggedIn ? $_SESSION['fullName'] : null;

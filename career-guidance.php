@@ -5,7 +5,7 @@ session_start();
 $servername = "localhost";
 $dbusername = "root";
 $dbpassword = "";
-$dbname = "careerguidance";
+$dbname = "em_mentor";
 
 $conn = new mysqli($servername, $dbusername, $dbpassword, $dbname, 3307);
 if ($conn->connect_error) {

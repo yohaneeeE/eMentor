@@ -1,7 +1,7 @@
 <?php
 session_start();
 
-include 'db_connect.php';   
+include 'db_connect.php';
 
 // Get career_id from GET, validate
 if (!isset($_GET['career_id']) || !is_numeric($_GET['career_id'])) {
@@ -24,39 +24,40 @@ $stmt->close();
 // Fetch roadmap steps ordered by step_number
 $stmt = $conn->prepare("SELECT step_number, step_title, step_detail FROM career_roadmaps WHERE career_id = ? ORDER BY step_number ASC");
 $stmt->bind_param("i", $career_id);
-// Fetch certificates for this career
-$certificates = [];
-try {
-    // check if the certificates table exists first to avoid fatal exceptions
-    $table_check = $conn->query("SHOW TABLES LIKE 'certificates'");
-    if ($table_check && $table_check->num_rows > 0) {
-        $stmt = $conn->prepare("SELECT certificate_title, provider, description, skills FROM certificates WHERE career_id = ?");
-        if ($stmt) {
-            $stmt->bind_param("i", $career_id);
-            $stmt->execute();
-            $cert_result = $stmt->get_result();
-            while ($row = $cert_result->fetch_assoc()) {
-                $certificates[] = $row;
-            }
-            $stmt->close();
-        }
-    } else {
-        // table does not exist — leave $certificates empty
-    }
-} catch (mysqli_sql_exception $e) {
-    // If the environment throws exceptions for mysqli errors, swallow and continue
-    // Optionally log: error_log("Certificates query failed: " . $e->getMessage());
-    $certificates = [];
-}
-$stmt->bind_param("i", $career_id);
 $stmt->execute();
-$cert_result = $stmt->get_result();
+$roadmap_result = $stmt->get_result();
 
-$certificates = [];
-while ($row = $cert_result->fetch_assoc()) {
-    $certificates[] = $row;
+$roadmap_steps = [];
+while ($row = $roadmap_result->fetch_assoc()) {
+    $roadmap_steps[] = $row;
 }
 $stmt->close();
+
+// Fetch certificates for this career (check for table existence first to avoid fatal errors)
+$certificates = [];
+
+// Verify the certificates table exists before preparing the query
+$table_check = $conn->query("SHOW TABLES LIKE 'certificates'");
+if ($table_check && $table_check->num_rows > 0) {
+    $stmt = $conn->prepare("SELECT certificate_title, provider, description, skills FROM career_certificates WHERE career_id = ?");
+    if ($stmt) {
+        $stmt->bind_param("i", $career_id);
+        $stmt->execute();
+        $cert_result = $stmt->get_result();
+
+        while ($row = $cert_result->fetch_assoc()) {
+            $certificates[] = $row;
+        }
+        $stmt->close();
+    } else {
+        // If prepare failed for some unexpected reason, ensure certificates remain empty and log the error
+        error_log('Failed to prepare certificates query: ' . $conn->error);
+        $certificates = [];
+    }
+} else {
+    // Table does not exist: leave $certificates as empty array and optionally log for debugging
+    error_log("Missing 'certificates' table in database; skipping certificates section.");
+}
 
 $conn->close();
 ?>

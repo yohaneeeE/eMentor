@@ -1,9 +1,8 @@
 <?php
 // Database connection parameters
-// Use 127.0.0.1 and the default MySQL port 3306 for XAMPP; adjust if your server uses a different port.
-$host = '127.0.0.1';
-$port = 3306;
-$db   = 'em_mentor';
+$host = 'localhost';
+$port = 3307;
+$db   = 'careerguidance';
 $user = 'root';
 $pass = '';
 $charset = 'utf8mb4';
@@ -19,8 +18,7 @@ $options = [
 try {
     $pdo = new PDO($dsn, $user, $pass, $options);
 } catch (PDOException $e) {
-    // Provide an actionable hint: check MySQL service and correct host/port
-    die("Database connection failed: " . htmlspecialchars($e->getMessage()) . " — ensure MySQL is running and listening on {$host}:{$port}.");
+    die("Database connection failed: " . htmlspecialchars($e->getMessage()));
 }
 
 // Handle updates if form submitted
@@ -294,10 +292,13 @@ $careers = $stmt->fetchAll();
     <ul>
         <li><a href="dashboard.php">Dashboard</a></li>
         <li><a href="admin-users.php">User Management</a></li>
-        <li><a href="admin-content.php" class="active">Content Management</a></li>
-        <li><a href="../logout.php">Logout</a></li>
+        <li><a href="admin-content.php">Career Content</a></li>
+        <li><a href="admin-certificates.php">Certificates</a></li>
+        <li><a href="admin-roadmaps.php">Career Roadmaps</a></li>
+        <li><a href="logout.php">Logout</a></li>
     </ul>
 </nav>
+
 
 <div class="container">
     <h2>Career Content Management</h2>

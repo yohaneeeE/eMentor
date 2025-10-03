@@ -1,11 +1,13 @@
 <?php
-// Database connection parameters and fallback attempts
-$hosts   = ['127.0.0.1', 'localhost'];
-$ports   = [3307, 3306];
-$db      = 'em_mentor';
-$user    = 'root';
-$pass    = '';
+// Database connection parameters
+$host = 'localhost';
+$port = 3307;
+$db   = 'careerguidance';
+$user = 'root';
+$pass = '';
 $charset = 'utf8mb4';
+
+$dsn = "mysql:host=$host;port=$port;dbname=$db;charset=$charset";
 
 $options = [
     PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
@@ -13,43 +15,15 @@ $options = [
     PDO::ATTR_EMULATE_PREPARES   => false,
 ];
 
-$pdo = null;
-$lastException = null;
-
-// Try common host/port combinations to avoid "connection refused" when port or host differs
-foreach ($hosts as $host) {
-    foreach ($ports as $port) {
-        $dsn = "mysql:host={$host};port={$port};dbname={$db};charset={$charset}";
-        try {
-            $pdo = new PDO($dsn, $user, $pass, $options);
-            break 2; // connected successfully
-        } catch (PDOException $e) {
-            // keep the last exception to log/report after trying all combos
-            $lastException = $e;
-        }
-    }
-}
-
-if (!$pdo) {
-    // Log the detailed error on the server for debugging (do not expose internal errors to users)
-    if ($lastException instanceof PDOException) {
-        error_log('Database connection failed: ' . $lastException->getMessage());
-    } else {
-        error_log('Database connection failed: unknown error');
-    }
-
-    // Show a generic message to the user and stop
-    echo "Database connection failed: Unable to connect to the database server. Please ensure MySQL/MariaDB is running and the connection settings are correct.";
-    exit;
-}
-
-// Fetch users with only available fields
 try {
+    $pdo = new PDO($dsn, $user, $pass, $options);
+
+    // Fetch users with only available fields
     $stmt = $pdo->query('SELECT id, fullname, email, created_at FROM users ORDER BY created_at DESC');
     $users = $stmt->fetchAll();
 } catch (PDOException $e) {
-    error_log('Query failed: ' . $e->getMessage());
-    $users = [];
+    echo "Database connection failed: " . htmlspecialchars($e->getMessage());
+    exit;
 }
 
 // Format created_at date
@@ -420,14 +394,17 @@ function formatDate($datetime) {
         <h1>User Management</h1>
         <p>Manage user accounts</p>
     </header>
-    <nav>
-        <ul>
-            <li><a href="dashboard.php">Dashboard</a></li>
-            <li><a href="admin-users.php"  class="active">User Management</a></li>
-            <li><a href="admin-content.php">Content Management</a></li>
-            <li><a href="../logout.php">Logout</a></li>
-        </ul>
-    </nav>
+<nav>
+    <ul>
+        <li><a href="dashboard.php">Dashboard</a></li>
+        <li><a href="admin-users.php">User Management</a></li>
+        <li><a href="admin-content.php">Career Content</a></li>
+        <li><a href="admin-certificates.php">Certificates</a></li>
+        <li><a href="admin-roadmaps.php">Career Roadmaps</a></li>
+        <li><a href="logout.php">Logout</a></li>
+    </ul>
+</nav>
+
 
     <div class="container">
         <h2>User Management Dashboard</h2>
