@@ -1,5 +1,48 @@
 <?php
-include 'db_connect.php';
+$host = 'localhost';
+$port = '3307';
+$dbname = 'careerguidance';
+$user = 'root';
+$pass = '';
+
+try {
+    $pdo = new PDO("mysql:host=$host;port=$port;dbname=$dbname;charset=utf8mb4", $user, $pass, [
+        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
+    ]);
+} catch (PDOException $e) {
+    die("Database connection failed: " . $e->getMessage());
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'storeResult') {
+    $name = $_POST['name'] ?? '';
+    $email = $_POST['email'] ?? '';
+    $careerPrediction = $_POST['careerPrediction'] ?? '';
+    $subjects = $_POST['subjects'] ?? [];
+
+    try {
+        // Insert student
+        $stmt = $pdo->prepare("INSERT INTO students (name, email, careerPrediction) VALUES (?, ?, ?)");
+        $stmt->execute([$name, $email, $careerPrediction]);
+        $studentId = $pdo->lastInsertId();
+
+        // Insert subjects
+        if (!empty($subjects) && is_array($subjects)) {
+            $stmtSub = $pdo->prepare("INSERT INTO subjects (student_id, description, grade) VALUES (?, ?, ?)");
+            foreach ($subjects as $s) {
+                $desc = $s['subject'] ?? '';
+                $grade = $s['grade'] ?? '';
+                $stmtSub->execute([$studentId, $desc, $grade]);
+            }
+        }
+
+        echo json_encode(["status" => "success", "studentId" => $studentId]);
+    } catch (Exception $e) {
+        echo json_encode(["status" => "error", "message" => $e->getMessage()]);
+    }
+    exit;
+}
+
+
 // -----------------------------
 // Get API response (from POST or fallback to sessionStorage via JS)
 // -----------------------------
@@ -106,6 +149,13 @@ if (!$careersData && !empty($careerTitles)) {
     <h3>🏆 Top Career Matches</h3>
     <ul id="careerMatchesList"></ul>
   </div>
+
+  <div class="box" style="text-align:center;">
+  <button id="saveBtn" style="padding:12px 20px;background:#004080;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:bold;">
+    💾 Save Results
+  </button>
+  <p id="saveMsg" style="margin-top:10px;color:green;display:none;"></p>
+</div>
 
 </div>
 <footer>
@@ -258,6 +308,34 @@ document.querySelectorAll(".cert-list").forEach(listEl => {
 if (careerOptions.length > 0) {
   document.getElementById("careerPathBox").style.display = "block";
 }
+document.getElementById("saveBtn").addEventListener("click", async () => {
+  const payload = {
+    action: "storeResult",
+    name: "Carlo Test",  // you can replace with $_SESSION['user'] later
+    email: "carlo@example.com",
+    careerPrediction: (careerOptions[0] && careerOptions[0].career) || "N/A",
+    subjects: rawSubjects.map(([subject, grade]) => ({ subject, grade }))
+  };
+
+  const res = await fetch(window.location.href, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams(payload)
+  });
+
+  const result = await res.json();
+  const msg = document.getElementById("saveMsg");
+  if (result.status === "success") {
+    msg.style.display = "block";
+    msg.style.color = "green";
+    msg.textContent = "Results saved successfully!";
+  } else {
+    msg.style.display = "block";
+    msg.style.color = "red";
+    msg.textContent = " Failed to save: " + result.message;
+  }
+});
+
 </script>
 </body>
 </html>

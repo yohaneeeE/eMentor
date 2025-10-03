@@ -7,6 +7,7 @@ include 'db_connect.php';
 $isLoggedIn = isset($_SESSION['fullName']);
 $fullName   = $isLoggedIn ? $_SESSION['fullName'] : null;
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
