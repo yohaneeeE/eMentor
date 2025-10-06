@@ -1,244 +1,234 @@
-﻿<?php
-$host = 'localhost';
-$port = 3307;
-$db   = 'careerguidance';
-$user = 'root';
-$pass = '';
-$charset = 'utf8mb4';
-
-$dsn = "mysql:host=$host;port=$port;dbname=$db;charset=$charset";
-
-$options = [
-    PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-    PDO::ATTR_EMULATE_PREPARES   => false,
-];
-
-try {
-    $pdo = new PDO($dsn, $user, $pass, $options);
-
-    // Fetch total users
-    $stmt = $pdo->query('SELECT COUNT(*) as total_users FROM users');
-    $totalUsers = $stmt->fetch()['total_users'];
-
-    // Fetch total careers
-    $stmt = $pdo->query('SELECT COUNT(*) as total_careers FROM careers');
-    $totalCareers = $stmt->fetch()['total_careers'];
-
-} catch (\PDOException $e) {
-    throw new \PDOException($e->getMessage(), (int)$e->getCode());
-}
+<?php
+session_start();
+include 'db_connect.php';
+// Check login state
+$isLoggedIn = isset($_SESSION['fullName']);
+$fullName = $isLoggedIn ? $_SESSION['fullName'] : null;
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Admin Dashboard - Career Trends in IT</title>
-  <style>
-    * {margin:0; padding:0; box-sizing:border-box;}
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Dashboard - Digital Career Guidance</title>
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; }
     body {
-      font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background:#e9ecef;   /* light grey */
-      color:#333;
+        display: flex;
+        flex-direction: column;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: #e6e6e6; /* grey theme */
+        color: #333;
+        line-height: 1.6;
     }
-
-    /* Sidebar */
-    .sidebar {
-      height:100vh;
-      width:250px;
-      position:fixed;
-      top:0;
-      left:-250px;
-      background:#2f2f2f;  /* dark grey */
-      color:#fff;
-      padding-top:60px;
-      transition:0.3s;
-      overflow:auto;
-      z-index:1000;
-    }
-    .sidebar a {
-      display:block;
-      padding:14px 20px;
-      color:#fff;
-      text-decoration:none;
-      transition:0.3s;
-    }
-    .sidebar a:hover, .sidebar a.active {
-      background:#444;
-    }
-    .open-btn {
-      font-size:24px;
-      cursor:pointer;
-      background:none;
-      border:none;
-      color:#fff;
-      position:absolute;
-      left:20px;
-      top:20px;
-      z-index:1100;
-    }
+    main { flex: 1; }
 
     header {
-      background:linear-gradient(135deg,#444,#222);
-      color:#fff;
-      padding:25px 0;
-      text-align:center;
-      box-shadow:0 4px 12px rgba(0,0,0,0.1);
+        background: linear-gradient(135deg, #444, #666);
+        color: white;
+        padding: 20px;
+        text-align: center;
+        position: relative;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
     }
-    header h1 {font-size:2.5rem; margin-bottom:10px;}
-    header p {opacity:0.9;}
+        .sidebar .user-info {
+        margin-top:auto; /* push to bottom */
+        padding-top:15px;
+        border-top:1px solid rgba(255,255,255,0.2);
+        font-size:0.95rem;
+        color:#ffcc00;
+        text-align:center;
+    }
+    header h1 { font-size: 2rem; }
+    header p { font-size: 1rem; opacity: 0.9; }
+
+    /* Hamburger button */
+    .hamburger {
+        position: absolute;
+        top: 20px; left: 20px;
+        width: 30px; height: 22px;
+        display: flex; flex-direction: column;
+        justify-content: space-between;
+        cursor: pointer;
+        transition: transform 0.3s ease;
+        z-index: 300;
+    }
+    .hamburger span {
+        height: 4px; background: white; border-radius: 2px;
+        transition: all 0.3s ease;
+    }
+    .hamburger:hover { transform: scale(1.1); }
+
+    /* Hamburger active → X */
+    .hamburger.active span:nth-child(1) {
+        transform: rotate(45deg) translate(5px, 5px);
+    }
+    .hamburger.active span:nth-child(2) {
+        opacity: 0;
+    }
+    .hamburger.active span:nth-child(3) {
+        transform: rotate(-45deg) translate(6px, -6px);
+    }
+
+    /* Sidebar Menu */
+    .sidebar {
+        position: fixed; top: 0; left: -250px;
+        width: 250px; height: 100%;
+        background: #333;
+        color: white; padding: 60px 20px;
+        transition: left 0.3s ease;
+        display: flex; flex-direction: column;
+        gap: 20px;
+        z-index: 200;
+    }
+    .sidebar.active { left: 0; }
+    .sidebar a {
+        color: white; text-decoration: none;
+        font-size: 1.1rem; padding: 8px 0;
+        transition: color 0.3s ease, transform 0.2s ease;
+        display: block;
+    }
+    .sidebar a:hover {
+        color: #ffcc00;
+        transform: translateX(5px);
+    }
+
+    /* Overlay when sidebar opens */
+    .overlay {
+        position: fixed; top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: rgba(0,0,0,0.4);
+        opacity: 0; visibility: hidden;
+        transition: opacity 0.3s ease;
+        z-index: 100;
+    }
+    .overlay.active { opacity: 1; visibility: visible; }
 
     .container {
-      max-width:1200px;
-      margin:40px auto;
-      padding:30px;
-      background:#fff;
-      border-radius:15px;
-      box-shadow:0 4px 20px rgba(0,0,0,0.08);
+        flex: 1;
+        max-width: 1200px;
+        margin: 40px auto;
+        padding: 30px;
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
     }
 
     h2 {
-      color:#333;
-      margin-bottom:25px;
-      text-align:center;
-      font-size:2rem;
-      position:relative;
-      padding-bottom:15px;
+        color: #444;
+        margin-bottom: 20px;
+        text-align: center;
+        font-size: 1.8rem;
+        position: relative;
+        padding-bottom: 10px;
     }
     h2::after {
-      content:'';
-      position:absolute;
-      bottom:0;
-      left:50%;
-      transform:translateX(-50%);
-      width:100px;
-      height:3px;
-      background:linear-gradient(90deg,#444,#888);
-      border-radius:3px;
-    }
-    .intro-text {
-      font-size:1.1em;
-      margin-bottom:40px;
-      text-align:center;
-      color:#555;
-      max-width:800px;
-      margin-left:auto;
-      margin-right:auto;
-    }
-
-    .stats-grid {
-      display:grid;
-      grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
-      gap:30px;
-      margin-bottom:40px;
-    }
-    .stat-card {
-      background-color:#fdfdfd;
-      padding:25px 20px;
-      border-radius:12px;
-      text-align:center;
-      box-shadow:0 4px 10px rgba(0,0,0,0.05);
-      transition:all 0.3s ease;
-      border:1px solid #ddd;
-    }
-    .stat-card:hover {
-      transform:translateY(-5px);
-      box-shadow:0 8px 20px rgba(0,0,0,0.1);
-      background-color:#f5f5f5;
-    }
-    .stat-card img {
-      width:60px;
-      height:60px;
-      margin-bottom:15px;
-    }
-    .stat-number {
-      font-size:2.5rem;
-      font-weight:bold;
-      color:#333;
-      margin-bottom:10px;
-    }
-    .stat-label {
-      font-size:1.1rem;
-      color:#555;
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 80px;
+        height: 3px;
+        background: linear-gradient(90deg, #666, #ffcc00);
+        border-radius: 3px;
     }
 
     footer {
-      text-align:center;
-      padding:30px 0;
-      background:linear-gradient(135deg,#333,#222);
-      color:#fff;
-      font-size:0.95em;
-      margin-top:60px;
+        text-align: center;
+        padding: 20px;
+        background: linear-gradient(135deg, #444, #666);
+        color: white;
+        font-size: 0.9rem;
+        margin-top: auto; /* sticky footer */
     }
     .footer-links {
-      display:flex;
-      justify-content:center;
-      gap:20px;
-      margin-bottom:15px;
+        margin-bottom: 12px;
+        display: flex;
+        justify-content: center;
+        gap: 20px;
     }
     .footer-links a {
-      color:#ffcc00;
-      text-decoration:none;
-      transition:color 0.3s ease;
+        color: #ffcc00;
+        text-decoration: none;
+        transition: color 0.3s ease;
     }
-    .footer-links a:hover {color:white;}
-
-    @media (max-width:768px){
-      .stats-grid{gap:20px;}
-    }
-  </style>
+    .footer-links a:hover { color: white; }
+</style>
 </head>
 <body>
-  <!-- Sidebar -->
-  <div id="sidebar" class="sidebar">
-    <a href="dashboard.php">Dashboard</a>
-    <a href="admin-users.php">User Management</a>
-    <a href="admin-content.php">Career Content</a>
-    <a href="admin-certificates.php">Certificates</a>
-    <a href="admin-roadmaps.php">Career Roadmaps</a>
-    <a href="logout.php">Logout</a>
-  </div>
-  <button class="open-btn" onclick="toggleSidebar()">☰</button>
 
-  <header>
-    <h1>Admin Dashboard</h1>
-    <p>Manage and monitor your Career Trends platform</p>
-  </header>
-
-  <div class="container">
-    <h2>System Overview</h2>
-    <p class="intro-text">Monitor key metrics and manage your platform efficiently with comprehensive administrative tools.</p>
-    
-    <div class="stats-grid">
-      <div class="stat-card">
-        <img src="https://img.icons8.com/color/96/000000/user.png" alt="Users" />
-        <div class="stat-number"><?= number_format($totalUsers) ?></div>
-        <div class="stat-label">Total Users</div>
-      </div>
-      <div class="stat-card">
-        <img src="https://img.icons8.com/color/96/000000/content.png" alt="Careers" />
-        <div class="stat-number"><?= number_format($totalCareers) ?></div>
-        <div class="stat-label">Careers</div>
-      </div>
+<header>
+    <!-- Hamburger -->
+    <div class="hamburger" id="hamburger">
+        <span></span><span></span><span></span>
     </div>
-  </div>
+    <h1>eMentor</h1>
+    <p>Your personalized IT career dashboard</p>
+</header>
 
-  <footer>
+<!-- Sidebar -->
+<div class="sidebar" id="sidebar">
+    <a href="dashboard.php">Home</a>
+    <a href="career-guidance.php">Career Guidance</a>
+    <a href="careerpath.php">Career Path</a>
+    <a href="about.php">About</a>
+    <hr style="border: 1px solid rgba(255,255,255,0.2);">
+    <?php if ($isLoggedIn): ?>
+        <a href="settings.php">Settings</a>
+        <a href="logout.php" onclick="return confirm('Are you sure you want to logout?');">Logout</a>
+        <div class="user-info">
+            Logged in as <br><strong><?php echo htmlspecialchars($fullName); ?></strong>
+        </div>
+    <?php else: ?>
+        <a href="login.php">Login</a>
+    <?php endif; ?>
+</div>
+
+<!-- Overlay -->
+<div class="overlay" id="overlay"></div>
+
+<main>
+<div class="container">
+    <section class="description">
+        <h2>Welcome to Your Dashboard</h2>
+        <p style="text-align:center; max-width:800px; margin:auto;">
+            This dashboard is your hub for navigating eMentor’s resources. 
+            From discovering tailored career paths to gaining insights into the tech industry's 
+            most in-demand skills, you're in the right place to plan your future in Information Technology.
+        </p>
+    </section>
+</div>
+</main>
+
+<footer>
     <div class="footer-links">
-      <a href="privacy.php">Privacy Policy</a>
-      <a href="terms.php">Terms of Service</a>
-      <a href="contact.php">Contact Us</a>
+        <a href="privacy.html">Privacy Policy</a>
+        <a href="terms.html">Terms of Service</a>
+        <a href="contact.html">Contact Us</a>
     </div>
-    <p>&copy; 2025 Mapping The Future System. All rights reserved.</p>
+    <p>&copy; 2025 eMentor. All rights reserved.</p>
     <p>Bulacan State University - Bustos Campus</p>
-  </footer>
+</footer>
 
-  <script>
-    function toggleSidebar() {
-      const sidebar = document.getElementById("sidebar");
-      sidebar.style.left = (sidebar.style.left === "0px") ? "-250px" : "0px";
-    }
-  </script>
+<script>
+    const hamburger = document.getElementById('hamburger');
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('overlay');
+
+    hamburger.addEventListener('click', () => {
+        sidebar.classList.toggle('active');
+        overlay.classList.toggle('active');
+        hamburger.classList.toggle('active'); // toggle X animation
+    });
+
+    overlay.addEventListener('click', () => {
+        sidebar.classList.remove('active');
+        overlay.classList.remove('active');
+        hamburger.classList.remove('active'); // reset to bars
+    });
+</script>
+
 </body>
 </html>

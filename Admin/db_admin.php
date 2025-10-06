@@ -1,25 +1,30 @@
 <?php
-$servername = "localhost";
-$dbusername = "root";
-$dbpassword = "";
-$dbname = "em_mentor";
+// DB configuration (set these variables)
+$host = 'localhost';
+$dbname = 'em_mentor';
+$user = 'root';
+$pass = '';
+$charset = 'utf8';
 
-/* Connect to MySQL server (no DB selected) */
-$conn = new mysqli($servername, $dbusername, $dbpassword);
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
+// PDO DSNs and options
+$dsnNoDb = "mysql:host=$host;charset=$charset";
+$dsn = "mysql:host=$host;dbname=$dbname;charset=$charset";
+$options = [
+    PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+    PDO::ATTR_EMULATE_PREPARES   => false,
+];
+
+try {
+    // Connect to MySQL server (no DB selected) to create DB if needed
+    $pdo = new PDO($dsnNoDb, $user, $pass, $options);
+    $pdo->exec("CREATE DATABASE IF NOT EXISTS `$dbname` CHARACTER SET $charset COLLATE {$charset}_general_ci");
+
+    // Reconnect selecting the created database
+    $pdo = new PDO($dsn, $user, $pass, $options);
+
+    // $pdo is now ready for further queries
+} catch (PDOException $e) {
+    die("Database error: " . $e->getMessage());
 }
-
-/* Create database if it doesn't exist */
-$sql = "CREATE DATABASE IF NOT EXISTS `$dbname` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci";
-if ($conn->query($sql) === FALSE) {
-    die("Error creating database: " . $conn->error);
-}
-
-/* Select the newly created database and set charset */
-if (!$conn->select_db($dbname) || !$conn->set_charset("utf8mb4")) {
-    die("Error selecting database or setting charset: " . $conn->error);
-}
-
-/* Ready to use $conn for further queries */
 ?>

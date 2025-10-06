@@ -1,19 +1,15 @@
 ﻿<?php
 // Database connection parameters
-$host = 'localhost';
-$port = 3307;
-$db   = 'careerguidance';
-$user = 'root';
-$pass = '';
-$charset = 'utf8mb4';
+$dbAdminPath = __DIR__ . '/db_admin.php';
+if (!file_exists($dbAdminPath)) {
+    die('Database configuration file not found: ' . htmlspecialchars($dbAdminPath));
+}
+require_once $dbAdminPath;
 
-$dsn = "mysql:host=$host;port=$port;dbname=$db;charset=$charset";
-
-$options = [
-    PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-    PDO::ATTR_EMULATE_PREPARES   => false,
-];
+// Ensure required variables are present
+if (empty($dsn) || !isset($user) || !isset($pass) || !isset($options)) {
+    die('Database configuration variables ($dsn, $user, $pass, $options) are not properly set in db_admin.php');
+}
 
 try {
     $pdo = new PDO($dsn, $user, $pass, $options);

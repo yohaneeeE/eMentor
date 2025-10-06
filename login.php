@@ -1,13 +1,23 @@
 <?php
 session_start();
-$servername = "localhost";
-$dbusername = "root";
-$dbpassword = "";
-$dbname = "careerguidance";
-$conn = new mysqli($servername, $dbusername, $dbpassword, $dbname, 3307);
+include 'db_connect.php';
 
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
+$adminLoginMessage = "";
+
+// ---------------------- SIMPLE ADMIN LOGIN ----------------------
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['adminEmail'])) {
+    $email = trim($_POST['adminEmail'] ?? '');
+    $password = $_POST['adminPassword'] ?? '';
+
+    // Simple check (hardcoded admin credentials)
+    if ($email === "admin" && $password === "admin") {
+        $_SESSION['admin_id'] = 1;
+        $_SESSION['adminName'] = "Administrator";
+        header("Location: dashboard.php");
+        exit;
+    } else {
+        $adminLoginMessage = "❌ Invalid admin credentials.";
+    }
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['loginEmail'])) {
@@ -26,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['loginEmail'])) {
         if (password_verify($password, $hashedPassword)) {
             $_SESSION['user_id'] = $id;
             $_SESSION['fullName'] = $fullName;
-            header("Location: dashboard.php");
+            header("Location: index.php");
             exit;
         } else {
             echo "<script>alert('❌ Invalid password.');</script>";
@@ -142,7 +152,7 @@ button:hover { background:#e6b800; }
 
 <!-- Sidebar -->
 <div class="sidebar" id="sidebar">
-    <a href="dashboard.php">Home</a>
+    <a href="index.php">Home</a>
     <a href="career-guidance.php">Career Guidance</a>
     <a href="careerpath.php">Career Path</a>
     <a href="about.php">About</a>
@@ -166,7 +176,7 @@ button:hover { background:#e6b800; }
     <input type="password" name="loginPassword" required>
     <button type="submit">Login</button>
   </form>
-  <div class="links">
+    <div class="links">
     <p><a href="register.php">Create Account</a> | <a href="reset.php">Forgot Password?</a></p>
   </div>
 </div>

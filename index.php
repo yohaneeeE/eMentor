@@ -1,46 +1,19 @@
-<?php
+﻿<?php
 session_start();
 
 include 'db_connect.php';
 
 // Check login state
-
-// Check login state
 $isLoggedIn = isset($_SESSION['fullName']);
 $fullName = $isLoggedIn ? $_SESSION['fullName'] : null;
 
-// Fetch careers
-$careers = [];
-
-// Disable mysqli exception reporting so failed queries return false instead of throwing
-mysqli_report(MYSQLI_REPORT_OFF);
-
-// Try the original ordered query; if the server rejects it (e.g. requires an index),
-// fall back to a simple SELECT without ORDER BY to avoid a fatal error.
-$sql = "SELECT id, title, category, description, skills FROM careers ORDER BY category, title";
-$result = $conn->query($sql);
-if ($result === false) {
-    // Log the error for debugging and try a safe fallback
-    error_log('Career ordered query failed: ' . $conn->error);
-    $sql = "SELECT id, title, category, description, skills FROM careers";
-    $result = $conn->query($sql);
-}
-
-// Only iterate if we have a valid result set
-if ($result && $result->num_rows > 0) {
-    while ($row = $result->fetch_assoc()) {
-        $careers[] = $row;
-    }
-}
-
-$conn->close();
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Career Guidance - eMentor</title>
+<title>Dashboard - Digital Career Guidance</title>
 <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { height: 100%; }
@@ -48,19 +21,12 @@ $conn->close();
         display: flex;
         flex-direction: column;
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        background: #e6e6e6;
+        background: #e6e6e6; /* grey theme */
         color: #333;
         line-height: 1.6;
     }
     main { flex: 1; }
-        .sidebar .user-info {
-        margin-top:auto; /* push to bottom */
-        padding-top:15px;
-        border-top:1px solid rgba(255,255,255,0.2);
-        font-size:0.95rem;
-        color:#ffcc00;
-        text-align:center;
-    }
+
     header {
         background: linear-gradient(135deg, #444, #666);
         color: white;
@@ -68,6 +34,14 @@ $conn->close();
         text-align: center;
         position: relative;
         box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+        .sidebar .user-info {
+        margin-top:auto; /* push to bottom */
+        padding-top:15px;
+        border-top:1px solid rgba(255,255,255,0.2);
+        font-size:0.95rem;
+        color:#ffcc00;
+        text-align:center;
     }
     header h1 { font-size: 2rem; }
     header p { font-size: 1rem; opacity: 0.9; }
@@ -123,7 +97,7 @@ $conn->close();
         transform: translateX(5px);
     }
 
-    /* Overlay */
+    /* Overlay when sidebar opens */
     .overlay {
         position: fixed; top: 0; left: 0;
         width: 100%; height: 100%;
@@ -164,31 +138,6 @@ $conn->close();
         border-radius: 3px;
     }
 
-    .career-card {
-        border: 1px solid #ccc;
-        padding: 20px;
-        margin-bottom: 20px;
-        border-radius: 12px;
-        background: #fff;
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-        opacity: 1; /* visible immediately */
-    }
-    .career-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 6px 18px rgba(0,0,0,0.15);
-    }
-    .career-title { font-size: 1.3rem; font-weight: bold; color: #444; }
-    .career-category {
-        font-weight: bold;
-        color: #ffcc00;
-        margin-bottom: 10px;
-        display: inline-block;
-        background: #555;
-        padding: 4px 10px;
-        border-radius: 12px;
-        font-size: 0.9rem;
-    }
-
     footer {
         text-align: center;
         padding: 20px;
@@ -214,11 +163,12 @@ $conn->close();
 <body>
 
 <header>
+    <!-- Hamburger -->
     <div class="hamburger" id="hamburger">
         <span></span><span></span><span></span>
     </div>
     <h1>eMentor</h1>
-    <p>Explore various career paths and guidance</p>
+    <p>Your personalized IT career dashboard</p>
 </header>
 
 <!-- Sidebar -->
@@ -239,24 +189,19 @@ $conn->close();
     <?php endif; ?>
 </div>
 
+<!-- Overlay -->
 <div class="overlay" id="overlay"></div>
 
 <main>
 <div class="container">
-    <h2>Available Careers</h2>
-    <?php if (empty($careers)): ?>
-        <p style="text-align:center; color:#999;">No career data available at the moment.</p>
-    <?php else: ?>
-        <?php foreach ($careers as $career): ?>
-            <div class="career-card">
-                <div class="career-title"><?= htmlspecialchars($career['title']) ?></div>
-                <div class="career-category"><?= htmlspecialchars($career['category']) ?></div>
-                <div class="career-description"><?= nl2br(htmlspecialchars($career['description'])) ?></div>
-                <div class="career-skills"><strong>Skills:</strong> <?= htmlspecialchars($career['skills']) ?></div>
-                <a href="career-roadmap.php?career_id=<?= $career['id'] ?>">View Roadmap →</a>
-            </div>
-        <?php endforeach; ?>
-    <?php endif; ?>
+    <section class="description">
+        <h2>Welcome to Your Dashboard</h2>
+        <p style="text-align:center; max-width:800px; margin:auto;">
+            This dashboard is your hub for navigating eMentor’s resources. 
+            From discovering tailored career paths to gaining insights into the tech industry's 
+            most in-demand skills, you're in the right place to plan your future in Information Technology.
+        </p>
+    </section>
 </div>
 </main>
 
@@ -267,6 +212,7 @@ $conn->close();
         <a href="contact.html">Contact Us</a>
     </div>
     <p>&copy; 2025 eMentor. All rights reserved.</p>
+    <p>Bulacan State University - Bustos Campus</p>
 </footer>
 
 <script>
@@ -277,13 +223,13 @@ $conn->close();
     hamburger.addEventListener('click', () => {
         sidebar.classList.toggle('active');
         overlay.classList.toggle('active');
-        hamburger.classList.toggle('active');
+        hamburger.classList.toggle('active'); // toggle X animation
     });
 
     overlay.addEventListener('click', () => {
         sidebar.classList.remove('active');
         overlay.classList.remove('active');
-        hamburger.classList.remove('active');
+        hamburger.classList.remove('active'); // reset to bars
     });
 </script>
 

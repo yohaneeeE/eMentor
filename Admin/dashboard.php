@@ -1,33 +1,46 @@
 ﻿<?php
-$host = 'localhost';
-$port = 3307;
-$db   = 'careerguidance';
-$user = 'root';
-$pass = '';
-$charset = 'utf8mb4';
+session_start();
+include 'db_admin.php';
 
-$dsn = "mysql:host=$host;port=$port;dbname=$db;charset=$charset";
+// Ensure totals are defined to avoid "Undefined variable" warnings
+$totalUsers = 0;
+$totalCareers = 0;
 
-$options = [
-    PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-    PDO::ATTR_EMULATE_PREPARES   => false,
-];
-
-try {
-    $pdo = new PDO($dsn, $user, $pass, $options);
-
-    // Fetch total users
-    $stmt = $pdo->query('SELECT COUNT(*) as total_users FROM users');
-    $totalUsers = $stmt->fetch()['total_users'];
-
-    // Fetch total careers
-    $stmt = $pdo->query('SELECT COUNT(*) as total_careers FROM careers');
-    $totalCareers = $stmt->fetch()['total_careers'];
-
-} catch (\PDOException $e) {
-    throw new \PDOException($e->getMessage(), (int)$e->getCode());
+// If a database connection is provided, try to count rows safely.
+// Supports common connection variables: $conn, $mysqli (mysqli) and $pdo (PDO).
+if (isset($conn) && (class_exists('mysqli') && $conn instanceof mysqli)) {
+    $res = $conn->query("SELECT COUNT(*) AS cnt FROM users");
+    if ($res) {
+        $row = $res->fetch_assoc();
+        $totalUsers = (int)($row['cnt'] ?? 0);
+    }
+    $res = $conn->query("SELECT COUNT(*) AS cnt FROM careers");
+    if ($res) {
+        $row = $res->fetch_assoc();
+        $totalCareers = (int)($row['cnt'] ?? 0);
+    }
+} elseif (isset($mysqli) && (class_exists('mysqli') && $mysqli instanceof mysqli)) {
+    $res = $mysqli->query("SELECT COUNT(*) AS cnt FROM users");
+    if ($res) {
+        $row = $res->fetch_assoc();
+        $totalUsers = (int)($row['cnt'] ?? 0);
+    }
+    $res = $mysqli->query("SELECT COUNT(*) AS cnt FROM careers");
+    if ($res) {
+        $row = $res->fetch_assoc();
+        $totalCareers = (int)($row['cnt'] ?? 0);
+    }
+} elseif (isset($pdo) && (class_exists('PDO') && $pdo instanceof PDO)) {
+    try {
+        $stmt = $pdo->query("SELECT COUNT(*) FROM users");
+        $totalUsers = (int)$stmt->fetchColumn();
+        $stmt = $pdo->query("SELECT COUNT(*) FROM careers");
+        $totalCareers = (int)$stmt->fetchColumn();
+    } catch (Exception $e) {
+        // Keep defaults on error
+    }
 }
+// If no connection is available, $totalUsers and $totalCareers remain 0.
 ?>
 <!DOCTYPE html>
 <html lang="en">
