@@ -1,87 +1,18 @@
 <?php
 session_start();
 
-include 'db_connect.php';
+// DB connection
+$servername = "localhost";
+$dbusername = "root";
+$dbpassword = "";
+$dbname     = "careerguidance";
 
-// Simple server-side proxy: when this file receives a POST with files, forward them to the external Python API
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_FILES['file']) || isset($_FILES['certificateFiles']))) {
-    header('Content-Type: application/json');
-
-    // Ensure user is logged in before forwarding
-    if (!isset($_SESSION['fullName'])) {
-        echo json_encode(['error' => 'Authentication required.']);
-        exit;
-    }
-
-    // Target Python API (keep same host as before)
-    $apiUrl = 'https://python-api-k98f.onrender.com';
-
-    $postFields = [];
-
-    // Main TOR file
-    if (isset($_FILES['file']) && $_FILES['file']['error'] === UPLOAD_ERR_OK) {
-        $postFields['file'] = new CURLFile($_FILES['file']['tmp_name'], $_FILES['file']['type'], $_FILES['file']['name']);
-    }
-
-    // Certificates (may be multiple)
-    if (isset($_FILES['certificateFiles'])) {
-        // PHP organizes multiple files in arrays; normalize handling
-        $certFiles = $_FILES['certificateFiles'];
-        // If multiple uploads, iterate
-        if (is_array($certFiles['name'])) {
-            for ($i = 0; $i < count($certFiles['name']); $i++) {
-                if ($certFiles['error'][$i] === UPLOAD_ERR_OK) {
-                    // Use unique key names expected by remote API; append [] style
-                    $postFields['certificateFiles[' . $i . ']'] = new CURLFile($certFiles['tmp_name'][$i], $certFiles['type'][$i], $certFiles['name'][$i]);
-                }
-            }
-        } else {
-            // Single file field
-            if ($certFiles['error'] === UPLOAD_ERR_OK) {
-                $postFields['certificateFiles[]'] = new CURLFile($certFiles['tmp_name'], $certFiles['type'], $certFiles['name']);
-            }
-        }
-    }
-
-    // Initialize cURL to forward multipart/form-data
-    $ch = curl_init($apiUrl);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $postFields);
-    // Optionally, set a reasonable timeout
-    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 60);
-
-    $response = curl_exec($ch);
-    $curlErr  = curl_error($ch);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
-
-    if ($response === false) {
-        echo json_encode(['error' => 'Forwarding failed: ' . $curlErr]);
-        exit;
-    }
-
-    // If the remote returned a non-2xx, forward that as an error
-    if ($httpCode < 200 || $httpCode >= 300) {
-        // Try to include remote body if available
-        $body = $response ?: 'No response body';
-        echo json_encode(['error' => "Remote API returned HTTP $httpCode", 'details' => $body]);
-        exit;
-    }
-
-    // Assume remote returns JSON; forward it directly
-    // If remote returns something else, wrap it
-    $decoded = json_decode($response, true);
-    if (json_last_error() === JSON_ERROR_NONE) {
-        echo json_encode($decoded);
-    } else {
-        echo json_encode(['result' => $response]);
-    }
-    exit;
+$conn = new mysqli($servername, $dbusername, $dbpassword, $dbname, 3307);
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
 }
 
-// Check login state for page rendering
+// Check login state
 $isLoggedIn = isset($_SESSION['fullName']);
 $fullName   = $isLoggedIn ? $_SESSION['fullName'] : null;
 ?>
@@ -358,14 +289,9 @@ $fullName   = $isLoggedIn ? $_SESSION['fullName'] : null;
 </footer>
 
 <script>
-        // Post to the local PHP proxy in the same file which forwards to the external Python API
-        const response = await fetch("careerpath.php", { method: "POST", body: formData });
-        if (!response.ok) {
-            // attempt to include any text body returned for debugging
-            const text = await response.text().catch(() => '');
-            throw new Error("API request failed: " + response.status + " " + text);
-        }
-        const msg = await response.json();
+const hamburger = document.getElementById('hamburger');
+const sidebar   = document.getElementById('sidebar');
+const overlay   = document.getElementById('overlay');
 
 hamburger.addEventListener('click', () => {
     sidebar.classList.toggle('active');
@@ -441,7 +367,7 @@ submitButton.addEventListener("click", async () => {
             if (input.files[0]) formData.append("certificateFiles[]", input.files[0]);
         });
 
-        const response = await fetch("https://python-api-k98f.onrender.com", { method: "POST", body: formData });
+        const response = await fetch("http://127.0.0.1:8000/ocrPredict", { method: "POST", body: formData });
         if (!response.ok) throw new Error("API request failed.");
         const msg = await response.json();
 
