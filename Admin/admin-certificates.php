@@ -87,118 +87,261 @@ $careerIds = $careerStmt->fetchAll(PDO::FETCH_COLUMN);
 <head>
   <meta charset="UTF-8">
   <title>Certificate Management</title>
-  <style>
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background:#f4f4f4;
-      margin:0;
-    }
-    header {
-      background:linear-gradient(135deg,#2c2c2c,#444);
-      color:#fff;
-      text-align:center;
-      padding:20px;
-      position:relative;
-    }
+ <style>
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #f4f4f4;
+    margin: 0;
+  }
+
+  header {
+    background: linear-gradient(135deg, #2c2c2c, #444);
+    color: #fff;
+    text-align: center;
+    padding: 20px;
+    position: relative;
+  }
+
+  header h1 {
+    margin: 0;
+    font-size: 1.8rem;
+  }
+
+  .container {
+    max-width: 1200px;
+    margin: 20px auto;
+    background: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.1);
+    box-sizing: border-box;
+  }
+
+  h2 { margin-top: 0; color: #333; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+  }
+
+  th, td {
+    padding: 10px;
+    border: 1px solid #ddd;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  th { background: #555; color: #fff; }
+
+  .btn {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  .btn-edit { background: #0066cc; color: #fff; }
+  .btn-save { background: #28a745; color: #fff; display: none; }
+  .btn-cancel { background: #6c757d; color: #fff; display: none; }
+  .btn-delete { background: #e74c3c; color: #fff; }
+  .btn-add { background: #444; color: #fff; margin-bottom: 15px; padding: 10px 16px; border-radius: 6px; }
+
+  .filter-box {
+    margin-bottom: 15px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .filter-box label { font-weight: 600; color: #333; }
+
+  .pagination {
+    margin-top: 15px;
+    text-align: center;
+  }
+
+  .pagination a {
+    margin: 0 5px;
+    padding: 6px 12px;
+    border: 1px solid #ccc;
+    text-decoration: none;
+    color: #333;
+    border-radius: 4px;
+  }
+
+  .pagination a.active {
+    background: #444;
+    color: #fff;
+    border-color: #444;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    height: 100vh;
+    width: 250px;
+    position: fixed;
+    top: 0;
+    left: -250px;
+    background: #2c2c2c;
+    color: #fff;
+    padding-top: 60px;
+    transition: 0.3s;
+    overflow: auto;
+    z-index: 1000;
+  }
+
+  .sidebar a {
+    display: block;
+    padding: 12px 20px;
+    color: #fff;
+    text-decoration: none;
+  }
+
+  .sidebar a:hover {
+    background: #444;
+  }
+
+  .open-btn {
+    font-size: 24px;
+    cursor: pointer;
+    background: none;
+    border: none;
+    color: #fff;
+    position: absolute;
+    left: 20px;
+    top: 20px;
+    z-index: 1100;
+  }
+
+  /* Modal */
+  .modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background: rgba(0, 0, 0, 0.5);
+  }
+
+  .modal-content {
+    background: #fff;
+    margin: 6% auto;
+    padding: 20px;
+    border-radius: 10px;
+    width: 420px;
+    max-width: 90%;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  }
+
+  .modal-content h3 { margin-top: 0; }
+
+  .close {
+    color: #aaa;
+    float: right;
+    font-size: 24px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  .close:hover { color: #000; }
+
+  input[type=text], textarea, select {
+    width: 100%;
+    padding: 8px;
+    margin: 6px 0;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+  }
+
+  .message {
+    padding: 10px;
+    margin: 15px 0;
+    border-radius: 5px;
+  }
+
+  .success {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+  }
+
+  .error {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+  }
+
+  /* ✅ Mobile Responsive Styles */
+  @media (max-width: 768px) {
     header h1 {
-      margin:0;
-      font-size:1.8rem;
-    }
-    .container {
-      max-width:1200px;
-      margin:20px auto;
-      background:#fff;
-      padding:20px;
-      border-radius:10px;
-      box-shadow:0 3px 12px rgba(0,0,0,0.1);
-    }
-    h2 { margin-top:0; color:#333; }
-    table {
-      width:100%;
-      border-collapse:collapse;
-      margin-top:15px;
-    }
-    th, td {
-      padding:10px;
-      border:1px solid #ddd;
-      text-align:left;
-      vertical-align:top;
-    }
-    th { background:#555; color:#fff; }
-    .btn {
-      padding:6px 12px;
-      border:none;
-      border-radius:5px;
-      cursor:pointer;
-    }
-    .btn-edit {background:#0066cc;color:#fff;}
-    .btn-save {background:#28a745;color:#fff;display:none;}
-    .btn-cancel {background:#6c757d;color:#fff;display:none;}
-    .btn-delete {background:#e74c3c;color:#fff;}
-    .btn-add {background:#444;color:#fff;margin-bottom:15px;padding:10px 16px;border-radius:6px;}
-    .filter-box { margin-bottom:15px; display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
-    .filter-box label { font-weight:600; color:#333; }
-    .pagination { margin-top:15px; text-align:center; }
-    .pagination a {
-      margin:0 5px;
-      padding:6px 12px;
-      border:1px solid #ccc;
-      text-decoration:none;
-      color:#333;
-      border-radius:4px;
-    }
-       /* Sidebar */
-    .sidebar {
-      height:100vh;
-      width:250px;
-      position:fixed;
-      top:0;
-      left:-250px;
-      background:#2c2c2c;
-      color:#fff;
-      padding-top:60px;
-      transition:0.3s;
-      overflow:auto;
-    }
-    .sidebar a {
-      display:block;
-      padding:12px 20px;
-      color:#fff;
-      text-decoration:none;
-    }
-    .sidebar a:hover {
-      background:#444;
-    }
-   .open-btn {
-  font-size:24px;
-  cursor:pointer;
-  background:none;
-  border:none;
-  color:#fff;
-  position:absolute;
-  left:20px;
-  top:20px;
-  z-index:1100;
-}
-    .pagination a.active {
-      background:#444;
-      color:#fff;
-      border-color:#444;
+      font-size: 1.5rem;
+      padding: 10px;
     }
 
-    /* Modal Styles */
-    .modal {display:none;position:fixed;z-index:1000;left:0;top:0;width:100%;height:100%;overflow:auto;background:rgba(0,0,0,0.5);}
-    .modal-content {background:#fff;margin:6% auto;padding:20px;border-radius:10px;width:420px;box-shadow:0 5px 15px rgba(0,0,0,0.3);}
-    .modal-content h3 {margin-top:0;}
-    .close {color:#aaa;float:right;font-size:24px;font-weight:bold;cursor:pointer;}
-    .close:hover {color:#000;}
-    input[type=text], textarea, select {
-      width:100%;padding:8px;margin:6px 0;border:1px solid #ccc;border-radius:4px;box-sizing:border-box;
+    .container {
+      width: 100%;
+      margin: 10px;
+      padding: 15px; /* extra padding on mobile */
+      box-sizing: border-box;
     }
-    .message {padding:10px;margin:15px 0;border-radius:5px;}
-    .success {background:#d4edda;color:#155724;border:1px solid #c3e6cb;}
-    .error {background:#f8d7da;color:#721c24;border:1px solid #f5c6cb;}
-  </style>
+
+    table, thead, tbody, th, td, tr {
+      display: block;
+    }
+
+    thead {
+      display: none;
+    }
+
+    tr {
+      margin-bottom: 15px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 10px;
+      background: #fff;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+
+    td {
+      border: none;
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+    }
+
+    td::before {
+      content: attr(data-label);
+      font-weight: bold;
+      color: #333;
+      flex-basis: 40%;
+    }
+
+    .filter-box {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 8px;
+    }
+
+    .btn-add {
+      width: 100%;
+      text-align: center;
+      margin-top: 10px;
+    }
+
+    .open-btn {
+      top: 15px;
+      left: 15px;
+    }
+
+    .sidebar {
+      width: 220px;
+    }
+  }
+</style>
 </head>
 <body>
 <header>
