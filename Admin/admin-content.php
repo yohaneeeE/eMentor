@@ -201,8 +201,15 @@ table.user-table tr:hover { background:#f1f1f1; }
 .btn-save:hover {background:#218838;}
 .btn-cancel {background:#dc3545;}
 .btn-cancel:hover {background:#a71d2a;}
-    .btn-add {background:#444;color:#fff;margin-bottom:15px;padding:10px 16px;border-radius:6px;}
-/* Message */
+.btn-add {
+  background:#444;
+  color:#fff;
+  margin-bottom:15px;
+  padding:10px 16px;
+  border-radius:6px;
+}
+
+/* Messages */
 .message {
   padding:12px 15px;
   margin:20px 0;
@@ -253,10 +260,11 @@ table.user-table tr:hover { background:#f1f1f1; }
 }
 .modal-content {
   background:#fff;
-  margin:10% auto;
+  margin:8% auto;
   padding:20px;
   border-radius:10px;
   max-width:500px;
+  width:90%;
   box-shadow:0 5px 20px rgba(0,0,0,0.2);
 }
 .modal-content h3 { margin-top:0; margin-bottom:15px; }
@@ -276,12 +284,84 @@ table.user-table tr:hover { background:#f1f1f1; }
 }
 .close:hover {color:#000;}
 
+/* ✅ Responsive Design */
 @media(max-width:768px){
-  .user-controls{flex-direction:column;align-items:stretch;}
-  .search-box input{width:100%;}
-  table.user-table{font-size:0.9rem;}
+  body {
+    padding:10px;
+  }
+
+  header {
+    padding:15px 10px;
+  }
+
+  .container {
+    margin:20px 10px;
+    padding:20px;
+  }
+
+  .open-btn {
+    top:15px;
+    left:15px;
+  }
+
+  .user-controls {
+    flex-direction:column;
+    align-items:stretch;
+    gap:10px;
+  }
+
+  .search-box input {
+    width:100%;
+  }
+
+  /* Convert table to mobile card layout */
+  table.user-table, thead, tbody, th, td, tr {
+    display:block;
+  }
+
+  thead { display:none; }
+
+  tr {
+    margin-bottom:15px;
+    background:#fff;
+    border:1px solid #ddd;
+    border-radius:8px;
+    padding:10px;
+    box-shadow:0 2px 8px rgba(0,0,0,0.05);
+  }
+
+  td {
+    border:none;
+    display:flex;
+    justify-content:space-between;
+    padding:8px 0;
+  }
+
+  td::before {
+    content: attr(data-label);
+    font-weight:600;
+    color:#333;
+    flex-basis:40%;
+    text-align:left;
+  }
+
+  .btn-add {
+    width:100%;
+    text-align:center;
+  }
+
+  .pagination a {
+    padding:6px 10px;
+  }
+
+  .modal-content {
+    margin:20% auto;
+    width:90%;
+    padding:15px;
+  }
 }
 </style>
+
 </head>
 <body>
 
