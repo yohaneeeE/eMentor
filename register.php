@@ -18,17 +18,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['registerEmail'])) {
         $stmt->bind_param("s", $email);
         $stmt->execute();
         $stmt->store_result();
+
         if ($stmt->num_rows > 0) {
             echo "<script>alert('Email already registered.');</script>";
         } else {
             $stmt->close();
             $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+
             $stmt = $conn->prepare("INSERT INTO users (fullName, email, password, reset_phrase) VALUES (?, ?, ?, ?)");
             $stmt->bind_param("ssss", $fullName, $email, $hashedPassword, $resetPhrase);
+
             if ($stmt->execute()) {
-                echo "<script>alert('Registration successful! You can login now.'); window.location='login.php';</script>";
+                // ✅ Call the mail script after registration
+                include 'register_mail.php';
+                sendRegistrationMail($email, $fullName);
+
+                echo "<script>alert('Registration successful! Check your email for confirmation.'); window.location='login.php';</script>";
             } else {
-                echo "<script>alert('Registration failed.');</script>";
+                echo "<script>alert('Registration failed. Please try again.');</script>";
             }
         }
         $stmt->close();
@@ -43,6 +50,7 @@ $conn->close();
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Register | eMentor</title>
 <style>
+/* your existing styles unchanged */
 * { margin:0; padding:0; box-sizing:border-box; }
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -50,8 +58,6 @@ body {
     color: grey;
     line-height:1.6;
 }
-
-/* Header */
 header {
     background: linear-gradient(135deg, #444, #666);
     color:white;
@@ -62,8 +68,6 @@ header {
 }
 header h1 { font-size:2.5rem; margin-bottom:10px; }
 header p { font-size:1.1rem; opacity:0.9; }
-
-/* Hamburger */
 .hamburger {
     position:absolute; top:20px; left:20px;
     width:30px; height:22px;
@@ -81,8 +85,6 @@ header p { font-size:1.1rem; opacity:0.9; }
 .hamburger.active span:nth-child(1) { transform: rotate(45deg) translate(5px,5px); }
 .hamburger.active span:nth-child(2) { opacity:0; }
 .hamburger.active span:nth-child(3) { transform: rotate(-45deg) translate(6px,-6px); }
-
-/* Sidebar */
 .sidebar {
     position: fixed; top:0; left:-250px;
     width:250px; height:100%;
@@ -96,8 +98,6 @@ header p { font-size:1.1rem; opacity:0.9; }
     display:block; transition: color 0.3s ease, transform 0.2s ease;
 }
 .sidebar a:hover { color:#ffcc00; transform:translateX(5px); }
-
-/* Overlay */
 .overlay {
     position:fixed; top:0; left:0;
     width:100%; height:100%;
@@ -106,8 +106,6 @@ header p { font-size:1.1rem; opacity:0.9; }
     transition: opacity 0.3s ease; z-index:100;
 }
 .overlay.active { opacity:1; visibility:visible; }
-
-/* Container */
 .container {
     max-width:400px; margin:50px auto;
     background:#fff; padding:20px; border-radius:8px;
@@ -125,8 +123,6 @@ button:hover { background:#e6b800; }
 .links { margin-top:15px; text-align:center; }
 .links a { color:#004080; text-decoration:none; transition: all 0.3s ease; }
 .links a:hover { color:#ffcc00; }
-
-/* Responsive */
 @media(max-width:480px) { .container { margin:30px 15px; } }
 </style>
 </head>
@@ -138,7 +134,6 @@ button:hover { background:#e6b800; }
   <p>Empowering students with data-driven career guidance</p>
 </header>
 
-<!-- Sidebar -->
 <div class="sidebar" id="sidebar">
     <a href="index.php">Home</a>
     <a href="career-guidance.php">Career Guidance</a>
@@ -179,7 +174,6 @@ button:hover { background:#e6b800; }
 const hamburger = document.getElementById('hamburger');
 const sidebar = document.getElementById('sidebar');
 const overlay = document.getElementById('overlay');
-
 hamburger.addEventListener('click', () => {
     sidebar.classList.toggle('active');
     overlay.classList.toggle('active');
