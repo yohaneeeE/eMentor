@@ -403,12 +403,12 @@ body.sidebar-open footer {
 
 
   <div class="box" style="text-align:center;">
-    <button id="saveBtn" style="padding:12px 20px;background:grey;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:bold;">
-       Save Results
+    <button id="printBtn" style="padding:12px 20px;background:grey;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:bold;">
+       🖨️ Print Results
     </button>
-    <p id="saveMsg" style="margin-top:10px;color:green;display:none;"></p>
+    <p id="printMsg" style="margin-top:10px;color:green;display:none;"></p>
   </div>
-</div>
+
 
 <footer>
   <p>&copy; 2025 Mapping The Future System. All rights reserved.</p>
@@ -574,6 +574,55 @@ document.getElementById("saveBtn").addEventListener("click", async () => {
     overlay.classList.remove("active");
     body.classList.remove("sidebar-open");
   });
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script>
+// ---------- PRINT FUNCTION ----------
+document.getElementById("printBtn").addEventListener("click", async () => {
+  const container = document.querySelector(".container");
+  const msg = document.getElementById("printMsg");
+
+  msg.style.display = "block";
+  msg.textContent = "Generating printable version...";
+  msg.style.color = "gray";
+
+  // Hide sidebar and hamburger for clean print
+  document.querySelector(".sidebar").style.display = "none";
+  document.querySelector(".hamburger").style.display = "none";
+
+  try {
+    const canvas = await html2canvas(container, {
+      scale: 2,
+      backgroundColor: "#fff"
+    });
+    const imgData = canvas.toDataURL("image/png");
+
+    // Open printable image in new tab
+    const newWindow = window.open("", "_blank");
+    newWindow.document.write(`
+      <html>
+      <head><title>Career Suggestions</title></head>
+      <body style="text-align:center;font-family:sans-serif;">
+        <h2>Career Suggestions Snapshot</h2>
+        <img src="${imgData}" style="max-width:100%;height:auto;border:1px solid #ccc;border-radius:10px;"/>
+        <script>window.print();<\/script>
+      </body>
+      </html>
+    `);
+    newWindow.document.close();
+
+    msg.textContent = "Printable version opened successfully!";
+    msg.style.color = "green";
+  } catch (err) {
+    console.error(err);
+    msg.textContent = "Failed to generate print preview.";
+    msg.style.color = "red";
+  } finally {
+    // Restore UI
+    document.querySelector(".sidebar").style.display = "";
+    document.querySelector(".hamburger").style.display = "";
+  }
+});
+</script>
 
 </script>
 </body>
