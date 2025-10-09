@@ -2,28 +2,29 @@
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
-// ✅ Correct paths (case-sensitive on most servers)
+// ✅ Include PHPMailer only (no session_start() here!)
 require 'PHPMailer/src/Exception.php';
 require 'PHPMailer/src/PHPMailer.php';
 require 'PHPMailer/src/SMTP.php';
 
 /**
- * Sends a welcome email to a newly registered user.
+ * Sends a verification email to user after registration
  *
- * @param string $fullName Full name of the user
- * @param string $email User's email address
- * @return bool True on success, false on failure
+ * @param string $fullName
+ * @param string $email
+ * @param string $verificationCode
+ * @return bool
  */
-function sendWelcomeEmail($fullName, $email) {
+function sendVerificationEmail($fullName, $email, $verificationCode) {
     $mail = new PHPMailer(true);
 
     try {
-        // ✅ SMTP Configuration (Gmail recommended)
+        // ✅ SMTP Config (Gmail Example)
         $mail->isSMTP();
         $mail->Host       = 'smtp.gmail.com';
         $mail->SMTPAuth   = true;
-        $mail->Username   = 'ementorguidance@gmail.com';   // 🔹 Replace with your Gmail
-        $mail->Password   = 'YOUR_APP_PASSWORD_HERE';      // 🔹 Replace with Gmail App Password
+        $mail->Username   = 'ytrbulsubustosofficial@gmail.com';  // replace with your email
+        $mail->Password   = 'rrlo ayyo uxfo uwks';        // Gmail App Password
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
         $mail->Port       = 587;
 
@@ -34,18 +35,19 @@ function sendWelcomeEmail($fullName, $email) {
 
         // ✅ Email Content
         $mail->isHTML(true);
-        $mail->Subject = 'Welcome to eMentor!';
+        $mail->Subject = 'Verify Your eMentor Account';
         $mail->Body = "
             <html>
-            <body style='font-family: Arial, sans-serif; color: #333;'>
-                <h2>Hello, $fullName!</h2>
-                <p>🎉 Welcome to <strong>eMentor</strong> — your personal guide for career growth and discovery.</p>
-                <p>Your account has been successfully created. You can now log in and explore data-driven career guidance tools designed just for you.</p>
+            <body style='font-family: Arial, sans-serif;'>
+                <h2>Hi, $fullName!</h2>
+                <p>Thank you for registering with <strong>eMentor</strong>.</p>
+                <p>Your verification code is:</p>
+                <h2 style='color:#2e6c80;'>$verificationCode</h2>
+                <p>Please enter this code on the verification page to complete your registration.</p>
                 <br>
-                <p>Best regards,<br>
-                <strong>The eMentor Team</strong></p>
+                <p>Best regards,<br><strong>eMentor Team</strong></p>
                 <hr>
-                <small>This is an automated email — please do not reply directly.</small>
+                <small>This is an automated message. Do not reply directly.</small>
             </body>
             </html>
         ";
@@ -53,7 +55,6 @@ function sendWelcomeEmail($fullName, $email) {
         // ✅ Send Email
         $mail->send();
         return true;
-
     } catch (Exception $e) {
         error_log("Mailer Error ({$email}): " . $mail->ErrorInfo);
         return false;
