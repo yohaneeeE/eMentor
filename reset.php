@@ -1,39 +1,88 @@
 <?php
 session_start();
 include 'db_connect.php';
+include 'reset_mail.php'; // ✅ Mailer for forgot password
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['resetEmail'])) {
-    $email = trim($_POST['resetEmail']);
-    $phrase = trim($_POST['resetPhrase']);
-    $newPassword = $_POST['newPassword'];
-    $confirmPassword = $_POST['confirmPassword'];
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-    if (!$email || !$phrase || !$newPassword || !$confirmPassword) {
-        echo "<script>alert('All fields are required.');</script>";
-    } elseif ($newPassword !== $confirmPassword) {
-        echo "<script>alert('Passwords do not match.');</script>";
-    } else {
-        $stmt = $conn->prepare("SELECT id FROM users WHERE email = ? AND reset_phrase = ?");
-        $stmt->bind_param("ss", $email, $phrase);
-        $stmt->execute();
-        $stmt->store_result();
+    // 🟦 STEP 1: SEND RESET CODE
+    if (isset($_POST['sendCode'])) {
+        $email = trim($_POST['resetEmail']);
 
-        if ($stmt->num_rows === 1) {
-            $stmt->close();
-            $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
-            $stmt = $conn->prepare("UPDATE users SET password = ? WHERE email = ?");
-            $stmt->bind_param("ss", $hashedPassword, $email);
-            if ($stmt->execute()) {
-                echo "<script>alert('Password reset successful!'); window.location='login.php';</script>";
-            } else {
-                echo "<script>alert('Error updating password.');</script>";
-            }
+        if (empty($email)) {
+            echo "<script>alert('Please enter your email address.');</script>";
         } else {
-            echo "<script>alert('Invalid email or reset phrase.');</script>";
+            // Check if email exists in users
+            $stmt = $conn->prepare("SELECT full_name FROM users WHERE email = ?");
+            $stmt->bind_param("s", $email);
+            $stmt->execute();
+            $stmt->bind_result($fullName);
+            if ($stmt->fetch()) {
+                $stmt->close();
+
+                // Generate reset code
+                $resetCode = rand(100000, 999999);
+
+                // Remove any existing pending reset
+                $conn->query("DELETE FROM pending_users WHERE email = '$email'");
+
+                // Insert pending record for this reset
+                $stmt = $conn->prepare("INSERT INTO pending_users (full_name, email, verification_code) VALUES (?, ?, ?)");
+                $stmt->bind_param("sss", $fullName, $email, $resetCode);
+                $stmt->execute();
+
+                // Send reset email
+                if (sendResetEmail($fullName, $email, $resetCode)) {
+                    echo "<script>alert('A password reset code was sent to your email.');</script>";
+                } else {
+                    echo "<script>alert('Failed to send reset email. Please try again later.');</script>";
+                }
+            } else {
+                echo "<script>alert('Email not found in our records.');</script>";
+            }
         }
-        $stmt->close();
+    }
+
+    // 🟩 STEP 2: VERIFY CODE AND UPDATE PASSWORD
+    if (isset($_POST['resetPassword'])) {
+        $email = trim($_POST['resetEmail']);
+        $code = trim($_POST['resetCode']);
+        $newPassword = $_POST['newPassword'];
+        $confirmPassword = $_POST['confirmPassword'];
+
+        if (!$email || !$code || !$newPassword || !$confirmPassword) {
+            echo "<script>alert('All fields are required.');</script>";
+        } elseif ($newPassword !== $confirmPassword) {
+            echo "<script>alert('Passwords do not match.');</script>";
+        } else {
+            // Verify reset code in pending_users
+            $stmt = $conn->prepare("SELECT id FROM pending_users WHERE email = ? AND verification_code = ?");
+            $stmt->bind_param("ss", $email, $code);
+            $stmt->execute();
+            $stmt->store_result();
+
+            if ($stmt->num_rows === 1) {
+                $stmt->close();
+                $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
+
+                // Update password in main users table
+                $stmt = $conn->prepare("UPDATE users SET password = ? WHERE email = ?");
+                $stmt->bind_param("ss", $hashedPassword, $email);
+                if ($stmt->execute()) {
+                    // Remove the pending record
+                    $conn->query("DELETE FROM pending_users WHERE email = '$email'");
+                    echo "<script>alert('Password reset successful! You can now log in.'); window.location='login.php';</script>";
+                } else {
+                    echo "<script>alert('Error updating password.');</script>";
+                }
+            } else {
+                echo "<script>alert('Invalid reset code or email.');</script>";
+            }
+            $stmt->close();
+        }
     }
 }
+
 $conn->close();
 ?>
 <!DOCTYPE html>
@@ -109,11 +158,11 @@ header p { font-size:1.1rem; opacity:0.9; }
 
 /* Container */
 .container {
-    max-width:400px; margin:50px auto;
-    background:#fff; padding:20px; border-radius:8px;
+    max-width:420px; margin:50px auto;
+    background:#fff; padding:25px; border-radius:8px;
     box-shadow:0 4px 20px rgba(0,0,0,0.08);
 }
-h2 { text-align:center; color:grey; margin-bottom:20px; }
+h2 { text-align:center; color:#444; margin-bottom:20px; }
 label { font-weight:bold; display:block; margin-top:10px; }
 input { width:100%; padding:10px; margin-top:5px; border:1px solid #ddd; border-radius:5px; }
 button {
@@ -156,18 +205,28 @@ button:hover { background:#e6b800; }
 <div class="overlay" id="overlay"></div>
 
 <div class="container">
+  <h2>Forgot Password</h2>
+  <form method="post">
+    <label>Email</label>
+    <input type="email" name="resetEmail" required>
+    <button type="submit" name="sendCode">Send Reset Code</button>
+  </form>
+
+  <hr style="margin:25px 0; border:1px solid #ddd;">
+
   <h2>Reset Password</h2>
   <form method="post">
     <label>Email</label>
     <input type="email" name="resetEmail" required>
-    <label>Reset Phrase</label>
-    <input type="text" name="resetPhrase" required>
+    <label>Reset Code</label>
+    <input type="text" name="resetCode" required>
     <label>New Password</label>
     <input type="password" name="newPassword" required>
     <label>Confirm New Password</label>
     <input type="password" name="confirmPassword" required>
-    <button type="submit">Reset Password</button>
+    <button type="submit" name="resetPassword">Confirm Reset</button>
   </form>
+
   <div class="links">
     <p><a href="login.php">Back to Login</a></p>
   </div>
