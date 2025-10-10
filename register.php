@@ -14,17 +14,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['registerEmail'])) {
     } elseif ($password !== $confirmPassword) {
         echo "<script>alert('Passwords do not match.');</script>";
     } else {
-        // Check if email exists in users
+        // Check if email already exists in users table
         $stmt = $conn->prepare("SELECT id FROM users WHERE email=?");
         $stmt->bind_param("s", $email);
         $stmt->execute();
         $stmt->store_result();
+
         if ($stmt->num_rows > 0) {
             echo "<script>alert('Email already registered.');</script>";
+            $stmt->close();
         } else {
             $stmt->close();
 
-            // remove old pending user if exists
+            // Remove any previous pending registration for this email
             $stmt = $conn->prepare("DELETE FROM pending_users WHERE email=?");
             $stmt->bind_param("s", $email);
             $stmt->execute();
@@ -33,20 +35,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['registerEmail'])) {
             $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
             $verificationCode = rand(100000, 999999);
 
-            $stmt = $conn->prepare("INSERT INTO pending_users (fullName,email,password,verification_code) VALUES (?,?,?,?)");
+            // Store the registration temporarily in pending_users
+            $stmt = $conn->prepare("INSERT INTO pending_users (fullName, email, password, verification_code, is_verified) VALUES (?, ?, ?, ?, 0)");
             $stmt->bind_param("ssss", $fullName, $email, $hashedPassword, $verificationCode);
 
             if ($stmt->execute()) {
                 $_SESSION['pending_verification_email'] = $email;
 
+                // Send email with verification code
                 if (sendVerificationEmail($fullName, $email, $verificationCode)) {
-                    echo "<script>alert('Registration successful! Check your email for the verification code.'); window.location='verify.php';</script>";
+                    echo "<script>
+                        alert('A verification code has been sent to your email. Please verify before logging in.');
+                        window.location='verify.php';
+                    </script>";
                 } else {
-                    echo "<script>alert('Registration saved but failed to send email.');</script>";
+                    echo "<script>alert('Failed to send verification email. Please try again later.');</script>";
                 }
             } else {
-                echo "<script>alert('Registration failed.');</script>";
+                echo "<script>alert('Failed to save registration.');</script>";
             }
+
             $stmt->close();
         }
     }
