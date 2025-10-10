@@ -1,28 +1,20 @@
 <?php
 session_start();
-include 'db_connect.php';
+include 'db_connect.php'; // Make sure this connects to your main database
 
-$adminLoginMessage = "";
+$loginMessage = "";
 
-// ---------------------- SIMPLE ADMIN LOGIN ----------------------
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['adminEmail'])) {
-    $email = trim($_POST['adminEmail'] ?? '');
-    $password = $_POST['adminPassword'] ?? '';
+// ----------- LOGIN HANDLER -----------
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $email = trim($_POST['email'] ?? '');
+    $password = $_POST['password'] ?? '';
 
-    // Simple check (hardcoded admin credentials)
     if ($email === "admin" && $password === "admin") {
         $_SESSION['admin_id'] = 1;
         $_SESSION['adminName'] = "Administrator";
-        header("Location: dashboard.php");
+        header("Location: Admin/dashboard.php");
         exit;
-    } else {
-        $adminLoginMessage = "❌ Invalid admin credentials.";
     }
-}
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['loginEmail'])) {
-    $email = trim($_POST['loginEmail']);
-    $password = $_POST['loginPassword'];
 
     $stmt = $conn->prepare("SELECT id, fullName, password FROM users WHERE email = ?");
     $stmt->bind_param("s", $email);
@@ -39,10 +31,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['loginEmail'])) {
             header("Location: index.php");
             exit;
         } else {
-            echo "<script>alert('❌ Invalid password.');</script>";
+            $loginMessage = "❌ Invalid password.";
         }
     } else {
-        echo "<script>alert('❌ Email not found.');</script>";
+        $loginMessage = "❌ Email not found.";
     }
     $stmt->close();
 }
@@ -62,8 +54,6 @@ body {
     color: grey;
     line-height:1.6;
 }
-
-/* Header */
 header {
     background: linear-gradient(135deg, #444, #666);
     color:white;
@@ -75,26 +65,14 @@ header {
 header h1 { font-size:2.5rem; margin-bottom:10px; }
 header p { font-size:1.1rem; opacity:0.9; }
 
-/* Hamburger */
 .hamburger {
     position:absolute; top:20px; left:20px;
     width:30px; height:22px;
     display:flex; flex-direction:column;
     justify-content:space-between;
     cursor:pointer; z-index:300;
-    transition: transform 0.3s ease;
 }
-.hamburger span {
-    height:4px; background:white;
-    border-radius:2px;
-    transition: all 0.3s ease;
-}
-.hamburger:hover { transform: scale(1.1); }
-.hamburger.active span:nth-child(1) { transform: rotate(45deg) translate(5px,5px); }
-.hamburger.active span:nth-child(2) { opacity:0; }
-.hamburger.active span:nth-child(3) { transform: rotate(-45deg) translate(6px,-6px); }
-
-/* Sidebar */
+.hamburger span { height:4px; background:white; border-radius:2px; }
 .sidebar {
     position: fixed; top:0; left:-250px;
     width:250px; height:100%;
@@ -104,12 +82,11 @@ header p { font-size:1.1rem; opacity:0.9; }
 }
 .sidebar.active { left:0; }
 .sidebar a {
-    color:white; text-decoration:none; font-size:1.1rem; padding:8px 0;
-    display:block; transition: color 0.3s ease, transform 0.2s ease;
+    color:white; text-decoration:none; font-size:1.1rem;
+    padding:8px 0; display:block; transition:0.3s;
 }
 .sidebar a:hover { color:#ffcc00; transform:translateX(5px); }
 
-/* Overlay */
 .overlay {
     position:fixed; top:0; left:0;
     width:100%; height:100%;
@@ -119,27 +96,35 @@ header p { font-size:1.1rem; opacity:0.9; }
 }
 .overlay.active { opacity:1; visibility:visible; }
 
-/* Container */
 .container {
     max-width:400px; margin:50px auto;
-    background:#fff; padding:20px; border-radius:8px;
+    background:#fff; padding:25px; border-radius:8px;
     box-shadow:0 4px 20px rgba(0,0,0,0.08);
 }
 h2 { text-align:center; color:grey; margin-bottom:20px; }
 label { font-weight:bold; display:block; margin-top:10px; }
-input { width:100%; padding:10px; margin-top:5px; border:1px solid #ddd; border-radius:5px; }
+input {
+    width:100%; padding:10px; margin-top:5px;
+    border:1px solid #ddd; border-radius:5px;
+}
 button {
     margin-top:15px; width:100%; padding:10px;
-    background:#ffcc00; color:#004080; border:none; border-radius:5px;
-    font-weight:600; cursor:pointer; transition: all 0.3s ease;
+    background:#ffcc00; color:#004080;
+    border:none; border-radius:5px;
+    font-weight:600; cursor:pointer;
+    transition: all 0.3s ease;
 }
 button:hover { background:#e6b800; }
 .links { margin-top:15px; text-align:center; }
 .links a { color:#004080; text-decoration:none; transition: all 0.3s ease; }
 .links a:hover { color:#ffcc00; }
 
-/* Responsive */
-@media(max-width:480px) { .container { margin:30px 15px; } }
+.message {
+    text-align:center;
+    margin-bottom:15px;
+    color:red;
+    font-weight:500;
+}
 </style>
 </head>
 <body>
@@ -169,14 +154,17 @@ button:hover { background:#e6b800; }
 
 <div class="container">
   <h2>Login</h2>
+  <?php if ($loginMessage): ?>
+      <p class="message"><?= htmlspecialchars($loginMessage) ?></p>
+  <?php endif; ?>
   <form method="post">
     <label>Email</label>
-    <input type="email" name="loginEmail" required>
+    <input type="text" name="email" placeholder="Enter email " required>
     <label>Password</label>
-    <input type="password" name="loginPassword" required>
+    <input type="password" name="password" required>
     <button type="submit">Login</button>
   </form>
-    <div class="links">
+  <div class="links">
     <p><a href="register.php">Create Account</a> | <a href="reset.php">Forgot Password?</a></p>
   </div>
 </div>

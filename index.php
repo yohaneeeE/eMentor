@@ -93,7 +93,7 @@ $fullName = $isLoggedIn ? $_SESSION['fullName'] : null;
         display: block;
     }
     .sidebar a:hover {
-        color: #ffcc00;
+        color: rgba(255, 204, 0, 1);
         transform: translateX(5px);
     }
 
@@ -205,6 +205,28 @@ $fullName = $isLoggedIn ? $_SESSION['fullName'] : null;
 </div>
 </main>
 
+    <style>
+        .career-readmaps-btn {
+            background-color:  rgba(255, 204, 0, 1);
+            color: blackj;
+            border: none;
+            padding: 10px 20px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+            display: block;
+            margin: 0 auto;
+            position:relative;
+            
+        }
+        .career-readmaps-btn:hover {
+            background-color: #003060;
+            color: white;
+        }
+    </style>
+
+    <button class="career-readmaps-btn" onclick="window.location.href='career-guidance.php'">Click here to Explore Career Readmaps</button>
 <footer>
     <div class="footer-links">
         <a href="privacy.html">Privacy Policy</a>

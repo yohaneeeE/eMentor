@@ -1,229 +1,259 @@
 <?php
 session_start();
-
 include 'db_connect.php';
 
-// Check login state
-$isLoggedIn = isset($_SESSION['fullName']);
-$fullName = $isLoggedIn ? $_SESSION['fullName'] : null;
+// --- Sidebar login info ---
+$isLoggedIn = $_SESSION['logged_in'] ?? false;
+$fullName   = $_SESSION['full_name'] ?? '';
+$userEmail  = $_SESSION['email'] ?? '';
+
+// --- Handle Save Results POST ---
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'storeResult') {
+    $name = $_POST['name'] ?? '';
+    $email = $_POST['email'] ?? '';
+    $careerPrediction = $_POST['careerPrediction'] ?? '';
+    $subjects = isset($_POST['subjects']) ? json_decode($_POST['subjects'], true) : [];
+
+    try {
+        // Insert main student record
+        $stmt = $pdo->prepare("INSERT INTO students (name, email, careerPrediction) VALUES (?, ?, ?)");
+        $stmt->execute([$name, $email, $careerPrediction]);
+        $studentId = $pdo->lastInsertId();
+
+        // Insert subject grades
+        if (!empty($subjects)) {
+            $stmtSub = $pdo->prepare("INSERT INTO subjects (student_id, description, grade) VALUES (?, ?, ?)");
+            foreach ($subjects as $s) {
+                $desc = $s['subject'] ?? '';
+                $grade = $s['grade'] ?? '';
+                if ($desc && $grade) {
+                    $stmtSub->execute([$studentId, $desc, $grade]);
+                }
+            }
+        }
+
+        echo json_encode(["status" => "success", "studentId" => $studentId]);
+    } catch (Exception $e) {
+        echo json_encode(["status" => "error", "message" => $e->getMessage()]);
+    }
+    exit;
+}
+
+// --- Receive JSON input (from API / JS fetch) ---
+$input = json_decode(file_get_contents('php://input'), true);
+
+$careerPrediction = $input['careerPrediction'] ?? '';
+$careerOptions    = $input['careerOptions'] ?? [];
+$rawSubjects      = $input['rawSubjects'] ?? [];
+$mappedSkills     = $input['mappedSkills'] ?? [];
+$certificates     = $input['certificates'] ?? [];
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>About | Digital Career Guidance</title>
-  <style>
-    * { margin:0; padding:0; box-sizing:border-box; }
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: #e6e6e6;
-      color: grey;
-      line-height:1.6;
-    }
-
-    header {
-      background: linear-gradient(135deg, #444, #666);
-      color:white;
-      padding:25px 0;
-      text-align:center;
-      box-shadow:0 4px 12px rgba(0,0,0,0.2);
-      position:relative;
-    }
-    header h1 { font-size:2.5rem; margin-bottom:10px; }
-    header p { font-size:1.1rem; opacity:0.9; }
-
-    /* Hamburger button */
-    .hamburger {
-        position: absolute;
-        top: 20px; left: 20px;
-        width: 30px; height: 22px;
-        display: flex; flex-direction: column;
-        justify-content: space-between;
-        cursor: pointer;
-        z-index: 300;
-        transition: transform 0.3s ease;
-    }
-    .hamburger span {
-        height:4px;
-        background:white;
-        border-radius:2px;
-        transition: all 0.3s ease;
-    }
-    .hamburger:hover { transform: scale(1.1); }
-    .hamburger.active span:nth-child(1) { transform: rotate(45deg) translate(5px,5px); }
-    .hamburger.active span:nth-child(2) { opacity:0; }
-    .hamburger.active span:nth-child(3) { transform: rotate(-45deg) translate(6px,-6px); }
-
-    /* Sidebar */
-    .sidebar {
-        position: fixed; top:0; left:-250px;
-        width:250px; height:100%;
-        background:#333; color:white;
-        padding:60px 20px 20px; /* added bottom padding */
-        display:flex; flex-direction:column;
-        gap:20px;
-        transition:left 0.3s ease;
-        z-index:200;
-    }
-    .sidebar.active { left:0; }
-    .sidebar a {
-        color:white; text-decoration:none;
-        font-size:1.1rem; padding:8px 0;
-        display:block; transition: color 0.3s ease, transform 0.2s ease;
-    }
-    .sidebar a:hover { color:#ffcc00; transform:translateX(5px); }
-
-    /* User section in sidebar */
-    .sidebar .user-info {
-        margin-top:auto; /* push to bottom */
-        padding-top:15px;
-        border-top:1px solid rgba(255,255,255,0.2);
-        font-size:0.95rem;
-        color:#ffcc00;
-        text-align:center;
-    }
-
-    /* Overlay */
-    .overlay {
-        position:fixed; top:0; left:0;
-        width:100%; height:100%;
-        background: rgba(0,0,0,0.4);
-        opacity:0; visibility:hidden;
-        transition: opacity 0.3s ease;
-        z-index:100;
-    }
-    .overlay.active { opacity:1; visibility:visible; }
-
-    .container {
-      max-width:1200px;
-      margin:40px auto;
-      padding:30px;
-      background:#fff;
-      border-radius:15px;
-      box-shadow:0 4px 20px rgba(0,0,0,0.08);
-    }
-
-    h2 {
-      color: grey;
-      margin-bottom:25px;
-      text-align:center;
-      font-size:2rem;
-      position:relative;
-      padding-bottom:15px;
-    }
-    h2::after {
-      content:'';
-      position:absolute;
-      bottom:0;
-      left:50%;
-      transform: translateX(-50%);
-      width:100px;
-      height:3px;
-      background: linear-gradient(90deg, #666, #ffcc00);
-      border-radius:3px;
-    }
-
-    .intro-text {
-      font-size:1.1em;
-      margin-bottom:30px;
-      text-align:center;
-      color:#555;
-      max-width:800px;
-      margin-left:auto;
-      margin-right:auto;
-    }
-
-    ul { margin-top:10px; padding-left:20px; margin-bottom:20px; }
-    ul li { margin-bottom:8px; color:#555; }
-
-    footer {
-      text-align:center;
-      padding:30px 0;
-      background: linear-gradient(135deg,#444,#666);
-      color:white;
-      font-size:0.95em;
-      margin-top:60px;
-    }
-    .footer-links { display:flex; justify-content:center; gap:20px; margin-bottom:15px; }
-    .footer-links a { color:#ffcc00; text-decoration:none; transition:color 0.3s ease; }
-    .footer-links a:hover { color:white; }
-  </style>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Career Suggestions | eMentor</title>
+<style>
+/* --- same CSS design, untouched --- */
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif; background:#f5f6fa; display:flex; flex-direction:column; min-height:100vh; color:#333; }
+header { background:linear-gradient(135deg,#444,#666); color:#fff; text-align:center; padding:25px 0; position:relative; box-shadow:0 3px 10px rgba(0,0,0,0.15); }
+header h1 { margin:0; font-size:2.2rem; letter-spacing:0.5px; }
+header p { margin-top:5px; font-size:1rem; opacity:0.9; }
+.hamburger { position:absolute; top:22px; left:25px; width:30px; height:22px; cursor:pointer; z-index:1100; display:flex; flex-direction:column; justify-content:space-between; }
+.hamburger span { display:block; width:100%; height:4px; background:#fff; border-radius:2px; transition:0.3s; }
+.hamburger.active span:nth-child(1){transform:rotate(45deg) translate(5px,6px);}
+.hamburger.active span:nth-child(2){opacity:0;}
+.hamburger.active span:nth-child(3){transform:rotate(-45deg) translate(6px,-6px);}
+.sidebar{position:fixed;top:0;left:-260px;width:260px;height:100%;background:#222;color:#fff;transition:left 0.3s ease;z-index:1000;padding-top:80px;display:flex;flex-direction:column;}
+.sidebar.active{left:0;}
+.sidebar a{color:#ddd;text-decoration:none;padding:14px 25px;font-size:1.05rem;border-bottom:1px solid rgba(255,255,255,0.1);transition:background 0.3s,padding-left 0.3s;}
+.sidebar a:hover{background:rgba(255,255,255,0.1);padding-left:35px;}
+.sidebar hr{border:none;border-top:1px solid rgba(255,255,255,0.2);margin:10px 0;}
+.user-info{margin-top:auto;padding:15px 25px;border-top:1px solid rgba(255,255,255,0.2);color:#ffcc00;font-size:0.9rem;text-align:center;}
+.overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);opacity:0;visibility:hidden;transition:0.3s;z-index:900;}
+.overlay.active{opacity:1;visibility:visible;}
+.container{flex:1;max-width:1100px;margin:30px auto;padding:30px;background:#fff;border-radius:15px;box-shadow:0 6px 20px rgba(0,0,0,0.08);}
+h2{text-align:center;color:#444;font-size:1.8rem;margin-bottom:30px;position:relative;}
+h2::after{content:'';position:absolute;bottom:-10px;left:50%;transform:translateX(-50%);width:90px;height:3px;background:linear-gradient(90deg,#666,#ffcc00);border-radius:3px;}
+.box{background:#fafafa;border:1px solid #ddd;border-radius:12px;padding:20px;margin-bottom:25px;box-shadow:0 2px 6px rgba(0,0,0,0.05);}
+.box h3{color:#333;margin-bottom:15px;font-size:1.3rem;display:flex;align-items:center;gap:8px;}
+table{width:100%;border-collapse:collapse;margin-top:10px;font-size:0.95rem;}
+th,td{border:1px solid #ccc;padding:10px;text-align:center;}
+th{background:#333;color:#fff;font-weight:600;}
+td{background:#fff;}
+tr:nth-child(even) td{background:#f9f9f9;}
+button{padding:12px 25px;border:none;border-radius:8px;font-size:1rem;cursor:pointer;transition:0.3s;}
+button#saveBtn{background:#333;color:#ffcc00;}
+button#saveBtn:hover{background:#555;}
+button#printBtn{background:#555;color:#fff;}
+button#printBtn:hover{background:#777;}
+footer{text-align:center;padding:20px;background:linear-gradient(135deg,#333,#555);color:#fff;font-size:0.9rem;margin-top:auto;}
+@media(max-width:768px){header h1{font-size:1.6rem;}.container{padding:20px;margin:20px;}table th,table td{font-size:0.85rem;padding:8px;}button{width:100%;margin-top:10px;}}
+</style>
 </head>
 <body>
 
+<div class="hamburger" id="hamburger"><span></span><span></span><span></span></div>
+
 <header>
-  <div class="hamburger" id="hamburger"><span></span><span></span><span></span></div>
   <h1>eMentor</h1>
-  <p>Empowering students with data-driven career guidance</p>
+  <p>Your Digital Career Guidance</p>
 </header>
 
 <!-- Sidebar -->
 <div class="sidebar" id="sidebar">
-    <a href="dashboard.php">Home</a>
-    <a href="career-guidance.php">Career Guidance</a>
-    <a href="careerpath.php">Career Path</a>
-    <a href="about.php">About</a>
-    <hr style="border: 1px solid rgba(255,255,255,0.2);">
-    <?php if ($isLoggedIn): ?>
-        <a href="settings.php">Settings</a>
-        <a href="logout.php" onclick="return confirm('Are you sure you want to logout?');">Logout</a>
-        <div class="user-info">
-            Logged in as <br><strong><?php echo htmlspecialchars($fullName); ?></strong>
-        </div>
-    <?php else: ?>
-        <a href="login.php">Login</a>
-    <?php endif; ?>
+  <a href="index.php">Home</a>
+  <a href="career-guidance.php">Career Guidance</a>
+  <a href="careerpath.php">Career Path</a>
+  <a href="about.php">About</a>
+  <hr>
+  <?php if ($isLoggedIn): ?>
+    <a href="settings.php">Settings</a>
+    <a href="logout.php" onclick="return confirm('Are you sure you want to logout?');">Logout</a>
+    <div class="user-info">
+      Logged in as <br><strong><?= htmlspecialchars($fullName) ?></strong>
+    </div>
+  <?php else: ?>
+    <a href="login.php">Login</a>
+  <?php endif; ?>
 </div>
 
 <div class="overlay" id="overlay"></div>
 
 <div class="container">
-  <h2>About This Website</h2>
-  <p class="intro-text">
-    eMentor is a web-based career guidance system specifically developed for Information Technology students. It integrates data-driven analysis of career trends with students’ personal interests and academic performance to provide tailored recommendations.
-  </p>
-  <p class="intro-text">
-    By leveraging industry insights and emerging technology trends, eMentor offers guidance on the most suitable career paths, helping students navigate today’s dynamic and competitive job market.
-  </p>
-  <ul>
-    <li>Latest trends in IT careers with visual growth statistics</li>
-    <li>Interactive tools to assess personal performance and interests</li>
-    <li>Suggestions based on grades, preferences, and hobbies</li>
-    <li>Guidance to align individual strengths with growing job sectors</li>
-  </ul>
-  <p class="intro-text">
-    Whether you're a high school student, college graduate, or someone exploring a new career path, this platform gives you a head start in planning your future with confidence and clarity.
-  </p>
+  <h2>Career Suggestions Based on Your Transcript</h2>
+
+  <div class="box">
+    <h3>📄 All Subjects</h3>
+    <table><thead><tr><th>Subject</th><th>Grade</th></tr></thead><tbody id="rawTableBody"></tbody></table>
+  </div>
+
+  <div class="box">
+    <h3>🧠 Skill Mapping</h3>
+    <table><thead><tr><th>Skill</th><th>Level</th></tr></thead><tbody id="skillsTableBody"></tbody></table>
+  </div>
+
+  <div class="box" id="suggestBox" style="display:none;">
+    <h3>💡 Suggestions</h3>
+    <ul id="suggestList"></ul>
+  </div>
+
+  <div class="box" id="careerMatchesBox" style="display:none;">
+    <h3>🏆 Top Career Matches</h3>
+    <ul id="careerMatchesList"></ul>
+  </div>
+
+  <div class="box" style="text-align:center;">
+    <button id="saveBtn">💾 Save Results</button>
+    <button id="printBtn">🖨️ Print Results</button>
+    <p id="saveMsg" style="margin-top:10px;display:none;"></p>
+  </div>
 </div>
 
 <footer>
-  <div class="footer-links">
-    <a href="privacy.html">Privacy Policy</a>
-    <a href="terms.html">Terms of Service</a>
-    <a href="contact.html">Contact Us</a>
-  </div>
-  <p>&copy; 2025 eMentor. All rights reserved.</p>
-  <p>Bulacan State University - Bustos Campus</p>
+  <p>&copy; 2025 Mapping The Future System. All rights reserved.</p>
 </footer>
 
 <script>
-    const hamburger = document.getElementById('hamburger');
-    const sidebar = document.getElementById('sidebar');
-    const overlay = document.getElementById('overlay');
+// --- Load data ---
+let rawSubjects   = <?= json_encode($rawSubjects) ?>;
+let mappedSkills  = <?= json_encode($mappedSkills) ?>;
+let careerOptions = <?= json_encode($careerOptions) ?>;
+let certificates  = <?= json_encode($certificates) ?>;
 
-    hamburger.addEventListener('click', () => {
-        sidebar.classList.toggle('active');
-        overlay.classList.toggle('active');
-        hamburger.classList.toggle('active');
+if ((!rawSubjects || rawSubjects.length === 0) && sessionStorage.apiResult) {
+  const apiResult = JSON.parse(sessionStorage.apiResult);
+  rawSubjects   = apiResult.rawSubjects   || [];
+  mappedSkills  = apiResult.mappedSkills  || {};
+  careerOptions = apiResult.careerOptions || [];
+}
+
+// --- Render subjects ---
+const rawTableBody = document.getElementById("rawTableBody");
+if (Array.isArray(rawSubjects) && rawSubjects.length > 0) {
+  rawSubjects.forEach(([subject, grade]) => {
+    rawTableBody.innerHTML += `<tr><td>${subject}</td><td>${grade}</td></tr>`;
+  });
+} else {
+  rawTableBody.innerHTML = "<tr><td colspan='2'>No subjects detected.</td></tr>";
+}
+
+// --- Render skills ---
+const skillsTableBody = document.getElementById("skillsTableBody");
+if (Object.keys(mappedSkills).length > 0) {
+  for (const [skill, level] of Object.entries(mappedSkills)) {
+    skillsTableBody.innerHTML += `<tr><td>${skill}</td><td>${level}</td></tr>`;
+  }
+} else {
+  skillsTableBody.innerHTML = "<tr><td colspan='2'>No skills detected.</td></tr>";
+}
+
+// --- Render career matches & suggestions ---
+const careerBox = document.getElementById("careerMatchesBox");
+const careerList = document.getElementById("careerMatchesList");
+const suggestBox = document.getElementById("suggestBox");
+const suggestList = document.getElementById("suggestList");
+
+if (Array.isArray(careerOptions) && careerOptions.length > 0) {
+  careerBox.style.display = "block";
+  suggestBox.style.display = "block";
+  const suggestionSet = new Set();
+
+  careerList.innerHTML = careerOptions.map(c => {
+    if (c.suggestion) suggestionSet.add(c.suggestion);
+    return `<li><strong>${c.career}</strong> - Confidence: ${c.confidence || "N/A"}%<br><em>${c.suggestion || ""}</em></li>`;
+  }).join("");
+
+  suggestList.innerHTML = [...suggestionSet].map(s => `<li>${s}</li>`).join("");
+}
+
+// --- Save results ---
+document.getElementById("saveBtn").addEventListener("click", async () => {
+  const payload = {
+    action: "storeResult",
+    name: "<?= htmlspecialchars($fullName ?: 'Student User') ?>",
+    email: "<?= htmlspecialchars($userEmail ?: 'student@example.com') ?>",
+    careerPrediction: (careerOptions[0]?.career) || "N/A",
+    subjects: JSON.stringify(rawSubjects.map(([subject, grade]) => ({ subject, grade })))
+  };
+
+  try {
+    const res = await fetch(window.location.href, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams(payload)
     });
 
-    overlay.addEventListener('click', () => {
-        sidebar.classList.remove('active');
-        overlay.classList.remove('active');
-        hamburger.classList.remove('active');
-    });
+    const result = await res.json();
+    const msg = document.getElementById("saveMsg");
+    msg.style.display = "block";
+    msg.textContent = result.status === "success" ? "✅ Results saved successfully!" : "❌ " + result.message;
+    msg.style.color = result.status === "success" ? "green" : "red";
+  } catch (err) {
+    alert("Error saving: " + err);
+  }
+});
+
+// --- Print ---
+document.getElementById("printBtn").addEventListener("click", () => window.print());
+
+// --- Sidebar toggle ---
+const hamburger = document.getElementById("hamburger");
+const sidebar = document.getElementById("sidebar");
+const overlay = document.getElementById("overlay");
+
+hamburger.addEventListener("click", () => {
+  hamburger.classList.toggle("active");
+  sidebar.classList.toggle("active");
+  overlay.classList.toggle("active");
+});
+overlay.addEventListener("click", () => {
+  hamburger.classList.remove("active");
+  sidebar.classList.remove("active");
+  overlay.classList.remove("active");
+});
 </script>
-
 </body>
 </html>

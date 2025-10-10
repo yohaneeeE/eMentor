@@ -361,6 +361,21 @@ $total_pages = ceil($total / $limit);
 </div>
 
 <script>
+  const hamburger = document.getElementById('hamburger');
+const sidebar   = document.getElementById('sidebar');
+const overlay   = document.getElementById('overlay');
+
+hamburger.addEventListener('click', () => {
+    sidebar.classList.toggle('active');
+    overlay.classList.toggle('active');
+    hamburger.classList.toggle('active'); 
+});
+
+overlay.addEventListener('click', () => {
+    sidebar.classList.remove('active');
+    overlay.classList.remove('active');
+    hamburger.classList.remove('active');
+});
 function startEdit(btn){toggle(btn.closest("tr"),true);}
 function cancelEdit(btn){toggle(btn.closest("tr"),false);}
 function toggle(row,edit){

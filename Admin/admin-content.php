@@ -481,6 +481,21 @@ table.user-table tr:hover { background:#f1f1f1; }
 </div>
 
 <script>
+  const hamburger = document.getElementById('hamburger');
+const sidebar   = document.getElementById('sidebar');
+const overlay   = document.getElementById('overlay');
+
+hamburger.addEventListener('click', () => {
+    sidebar.classList.toggle('active');
+    overlay.classList.toggle('active');
+    hamburger.classList.toggle('active'); 
+});
+
+overlay.addEventListener('click', () => {
+    sidebar.classList.remove('active');
+    overlay.classList.remove('active');
+    hamburger.classList.remove('active');
+});
 function toggleSidebar() {
   const sidebar = document.getElementById("sidebar");
   sidebar.style.left = (sidebar.style.left === "0px") ? "-250px" : "0px";

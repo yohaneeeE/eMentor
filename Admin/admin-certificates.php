@@ -284,6 +284,21 @@ function toggleSidebar(){
   const s=document.getElementById('sidebar');
   s.style.left=(s.style.left==='0px'?'-250px':'0px');
 }
+const hamburger = document.getElementById('hamburger');
+const sidebar   = document.getElementById('sidebar');
+const overlay   = document.getElementById('overlay');
+
+hamburger.addEventListener('click', () => {
+    sidebar.classList.toggle('active');
+    overlay.classList.toggle('active');
+    hamburger.classList.toggle('active'); 
+});
+
+overlay.addEventListener('click', () => {
+    sidebar.classList.remove('active');
+    overlay.classList.remove('active');
+    hamburger.classList.remove('active');
+});
 </script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 include 'db_admin.php';
 
 try {
@@ -131,7 +131,6 @@ footer{text-align:center;padding:20px;background:#333;color:#ddd;margin-top:40px
           <td><?=formatDate($user['created_at'])?></td>
           <td>
             <button class="btn-small" onclick="editUser(<?=$user['id']?>)">Edit</button>
-            <button class="btn-small btn-danger" onclick="deleteUser(<?=$user['id']?>)">Delete</button>
           </td>
         </tr>
       <?php endforeach; else: ?>
@@ -151,8 +150,22 @@ footer{text-align:center;padding:20px;background:#333;color:#ddd;margin-top:40px
 <footer>&copy; <?=date("Y")?> Career Guidance Admin</footer>
 
 <script>
+  const hamburger = document.getElementById('hamburger');
+const sidebar   = document.getElementById('sidebar');
+const overlay   = document.getElementById('overlay');
+
+hamburger.addEventListener('click', () => {
+    sidebar.classList.toggle('active');
+    overlay.classList.toggle('active');
+    hamburger.classList.toggle('active'); 
+});
+
+overlay.addEventListener('click', () => {
+    sidebar.classList.remove('active');
+    overlay.classList.remove('active');
+    hamburger.classList.remove('active');
+});
 function editUser(id){alert("Edit user "+id);}
-function deleteUser(id){if(confirm("Delete this user?")){alert("User "+id+" deleted.");}}
 </script>
 </body>
 </html>

@@ -6,6 +6,7 @@ include 'register_mail.php'; // must provide sendVerificationEmail($fullName, $e
 // If someone visits this page without a pending email, send them back to register
 if (!isset($_SESSION['pending_verification_email'])) {
     header("Location: login.php");
+
     exit;
 }
 
@@ -118,7 +119,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['verify'])) {
 
                 unset($_SESSION['attempts']);
                 unset($_SESSION['pending_verification_email']);
-                header("Location: dashboard.php");
+                header("Location: index.php");
                 exit;
             } else {
                 js_alert("An unexpected error occurred while creating your account. Please contact support.", "register.php");
@@ -191,6 +192,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['resend'])) {
         echo "<script>alert('Resend failed: mailer not available.');</script>";
     }
 }
+
 ?>
 <!doctype html>
 <html lang="en">

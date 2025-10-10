@@ -1,6 +1,5 @@
 <?php
 session_start();
-
 include 'db_connect.php';
 
 // Check login state
@@ -12,83 +11,77 @@ $fullName   = $isLoggedIn ? $_SESSION['fullName'] : null;
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Career Path Input - eMentor</title>
+<title>Career Path Assessment - eMentor</title>
 <style>
-    * { margin:0; padding:0; box-sizing:border-box; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; }
     body {
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        background: #fff;
-        color: #333;
-        min-height: 100vh;
         display: flex;
         flex-direction: column;
-    }
-        .sidebar .user-info {
-        margin-top:auto; /* push to bottom */
-        padding-top:15px;
-        border-top:1px solid rgba(255,255,255,0.2);
-        font-size:0.95rem;
-        color:#ffcc00;
-        text-align:center;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: #e6e6e6;
+        color: #333;
     }
 
+    /* Header */
     header {
-        background: linear-gradient(135deg, #3a3a3a, #1e1e1e);
+        background: linear-gradient(135deg, #444, #666);
         color: white;
         padding: 20px;
         text-align: center;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         position: relative;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
     }
     header h1 { font-size: 2rem; margin-bottom: 5px; }
     header p { font-size: 1rem; opacity: 0.9; }
 
-    /* Hamburger */
+    /* Hamburger button */
     .hamburger {
         position: absolute;
-        top: 20px;
-        left: 20px;
-        width: 30px;
-        height: 22px;
-        display: flex;
-        flex-direction: column;
+        top: 20px; left: 20px;
+        width: 30px; height: 22px;
+        display: flex; flex-direction: column;
         justify-content: space-between;
         cursor: pointer;
+        transition: transform 0.3s ease;
         z-index: 300;
     }
     .hamburger span {
-        height: 4px;
-        background: white;
-        border-radius: 2px;
+        height: 4px; background: white; border-radius: 2px;
         transition: all 0.3s ease;
     }
-    .hamburger.active span:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); }
+    .hamburger:hover { transform: scale(1.1); }
+    .hamburger.active span:nth-child(1) { transform: rotate(45deg) translate(5px,5px); }
     .hamburger.active span:nth-child(2) { opacity: 0; }
-    .hamburger.active span:nth-child(3) { transform: rotate(-45deg) translate(6px, -6px); }
+    .hamburger.active span:nth-child(3) { transform: rotate(-45deg) translate(6px,-6px); }
 
-    /* Sidebar Menu */
+    /* Sidebar */
     .sidebar {
         position: fixed; top: 0; left: -250px;
         width: 250px; height: 100%;
-        background: #333;
-        color: white; padding: 60px 20px;
+        background: #333; color: white;
+        padding: 60px 20px;
+        transition: left 0.3s ease;
         display: flex; flex-direction: column;
         gap: 20px;
         z-index: 200;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        transition: left 0.3s ease;
     }
     .sidebar.active { left: 0; }
     .sidebar a {
-        color: white;
-        text-decoration: none;
-        font-size: 1.1rem;
-        padding: 8px 0;
-        display: block;
+        color: white; text-decoration: none;
+        font-size: 1.1rem; padding: 8px 0;
         transition: color 0.3s ease, transform 0.2s ease;
+        display: block;
     }
     .sidebar a:hover { color: #ffcc00; transform: translateX(5px); }
-    hr.sidebar-separator { border: 1px solid rgba(255,255,255,0.2); margin: 10px 0; }
+    .sidebar .user-info {
+        margin-top: auto;
+        padding-top: 15px;
+        border-top: 1px solid rgba(255,255,255,0.2);
+        font-size: 0.95rem;
+        color: #ffcc00;
+        text-align: center;
+    }
 
     /* Overlay */
     .overlay {
@@ -101,18 +94,19 @@ $fullName   = $isLoggedIn ? $_SESSION['fullName'] : null;
     }
     .overlay.active { opacity: 1; visibility: visible; }
 
+    /* Container */
     .container {
         flex: 1;
         max-width: 900px;
         margin: 40px auto;
         padding: 30px;
-        background: #f7f7f7;
+        background: white;
         border-radius: 15px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
     }
 
     h2 {
-        color: #333;
+        color: #444;
         margin-bottom: 20px;
         text-align: center;
         font-size: 1.8rem;
@@ -122,94 +116,93 @@ $fullName   = $isLoggedIn ? $_SESSION['fullName'] : null;
     h2::after {
         content: '';
         position: absolute;
-        bottom: 0;
-        left: 50%;
+        bottom: 0; left: 50%;
         transform: translateX(-50%);
-        width: 80px;
-        height: 3px;
-        background: #ffcc00;
+        width: 80px; height: 3px;
+        background: linear-gradient(90deg, #666, #ffcc00);
         border-radius: 3px;
     }
 
     .intro-text { text-align: center; margin-bottom: 30px; color: #666; }
 
-    .certificate-card {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        background: #eaeaea;
+    /* Form Inputs */
+    label { font-weight: bold; color: #333; }
+    input[type="file"] {
+        margin-top: 8px;
         padding: 10px;
-        margin: 8px 0;
+        border: 1px solid #ccc;
         border-radius: 8px;
+        background: #f9f9f9;
     }
-    .remove-btn {
-        background: #ff4d4d;
-        border: none;
-        color: white;
-        padding: 6px 12px;
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 0.85rem;
-    }
-    .remove-btn:hover { background: #cc0000; }
-
-    .preview-container {
-        margin-top: 10px;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-    }
-    .preview-item {
-        border: 1px solid #ddd;
-        padding: 8px;
-        border-radius: 8px;
-        background: #fff;
-        text-align: center;
-        font-size: 0.9rem;
-        width: 120px;
-        color: #333;
-    }
-    .preview-item img { max-width: 100%; max-height: 100px; border-radius: 4px; }
-    .preview-pdf { font-size: 2rem; color: #d32f2f; }
 
     button {
         padding: 10px 20px;
         background-color: #ffcc00;
         color: #333;
         border: none;
-        border-radius: 6px;
+        border-radius: 8px;
         font-weight: bold;
         cursor: pointer;
         transition: transform 0.2s, background 0.3s;
     }
     button:hover { transform: scale(1.05); background-color: #ffdb4d; }
 
-    #resultBox {
-        margin-top:20px;
-        padding:15px;
-        border-radius:8px;
-        background:#f1f1f1;
-        font-size:0.95rem;
-        max-height:250px;
-        overflow-y:auto;
-        color:#444;
+    /* Certificate Cards */
+    .certificate-card {
+        display: flex; align-items: center;
+        gap: 10px;
+        background: #f3f3f3;
+        padding: 10px;
+        margin: 8px 0;
+        border-radius: 8px;
     }
-    .progress { color:#0066cc; }
-    .error { color:#cc0000; }
+    .remove-btn {
+        background: #ff4d4d;
+        border: none; color: white;
+        padding: 6px 12px;
+        border-radius: 6px;
+        cursor: pointer; font-size: 0.85rem;
+    }
+    .remove-btn:hover { background: #cc0000; }
+
+    /* Previews */
+    .preview-container { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 10px; }
+    .preview-item {
+        border: 1px solid #ddd; padding: 8px;
+        border-radius: 8px; background: #fff;
+        text-align: center; font-size: 0.9rem;
+        width: 120px; color: #333;
+    }
+    .preview-item img { max-width: 100%; max-height: 100px; border-radius: 4px; }
+    .preview-pdf { font-size: 2rem; color: #d32f2f; }
+
+    /* Result Box */
+    #resultBox {
+        margin-top: 20px;
+        padding: 15px;
+        border-radius: 8px;
+        background: #f1f1f1;
+        font-size: 0.95rem;
+        max-height: 250px;
+        overflow-y: auto;
+        color: #444;
+    }
+    .progress { color: #0066cc; }
+    .error { color: #cc0000; }
 
     footer {
         text-align: center;
         padding: 20px;
-        background: #1e1e1e;
-        color: #aaa;
+        background: linear-gradient(135deg, #444, #666);
+        color: white;
         font-size: 0.9rem;
         margin-top: auto;
     }
     .footer-links {
+        margin-bottom: 12px;
         display: flex;
         justify-content: center;
         gap: 20px;
-        margin-bottom: 10px;
     }
     .footer-links a { color: #ffcc00; text-decoration: none; }
     .footer-links a:hover { color: white; }
@@ -229,7 +222,7 @@ $fullName   = $isLoggedIn ? $_SESSION['fullName'] : null;
 
 <!-- Sidebar -->
 <div class="sidebar" id="sidebar">
-    <a href="dashboard.php">Home</a>
+    <a href="index.php">Home</a>
     <a href="career-guidance.php">Career Guidance</a>
     <a href="careerpath.php">Career Path</a>
     <a href="about.php">About</a>
@@ -248,12 +241,13 @@ $fullName   = $isLoggedIn ? $_SESSION['fullName'] : null;
 <!-- Overlay -->
 <div class="overlay" id="overlay"></div>
 
+<main>
 <div class="container">
   <h2>Career Path Assessment</h2>
   <p class="intro-text">Please upload your Academic Grades and any certificates to receive personalized career suggestions.</p>
 
   <form id="careerForm" enctype="multipart/form-data">
-    <label for="torInput">Academic Grades:</label><br/>
+    <label for="torInput">(Put Image of your Academic Grades here):</label><br/>
     <input type="file" id="torInput" name="torFile" accept="image/*,application/pdf"><br/>
     <div id="torPreview" class="preview-container"></div><br/>
 
@@ -269,6 +263,7 @@ $fullName   = $isLoggedIn ? $_SESSION['fullName'] : null;
 
   <div id="resultBox"></div>
 </div>
+</main>
 
 <footer>
     <div class="footer-links">
@@ -287,7 +282,7 @@ const overlay   = document.getElementById('overlay');
 hamburger.addEventListener('click', () => {
     sidebar.classList.toggle('active');
     overlay.classList.toggle('active');
-    hamburger.classList.toggle('active'); 
+    hamburger.classList.toggle('active');
 });
 
 overlay.addEventListener('click', () => {
@@ -372,6 +367,5 @@ submitButton.addEventListener("click", async () => {
     }
 });
 </script>
-
 </body>
 </html>
