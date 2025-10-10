@@ -1,6 +1,7 @@
 <?php
 session_start();
 include 'db_connect.php';
+include 'register_mail.php'; // must have sendVerificationEmail($fullName,$email,$code)
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['registerEmail'])) {
     $fullName = trim($_POST['fullName']);
@@ -13,7 +14,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['registerEmail'])) {
     } elseif ($password !== $confirmPassword) {
         echo "<script>alert('Passwords do not match.');</script>";
     } else {
-        $stmt = $conn->prepare("SELECT id FROM users WHERE email = ?");
+        // Check if email exists in users
+        $stmt = $conn->prepare("SELECT id FROM users WHERE email=?");
         $stmt->bind_param("s", $email);
         $stmt->execute();
         $stmt->store_result();
@@ -21,30 +23,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['registerEmail'])) {
             echo "<script>alert('Email already registered.');</script>";
         } else {
             $stmt->close();
-            $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-            $verificationCode = rand(100000, 999999); // 6-digit code
 
-            $stmt = $conn->prepare("INSERT INTO users (fullName, email, password, verification_code, is_verified) VALUES (?, ?, ?, ?, 0)");
-            $stmt->bind_param("sssi", $fullName, $email, $hashedPassword, $verificationCode);
+            // remove old pending user if exists
+            $stmt = $conn->prepare("DELETE FROM pending_users WHERE email=?");
+            $stmt->bind_param("s", $email);
+            $stmt->execute();
+            $stmt->close();
+
+            $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+            $verificationCode = rand(100000, 999999);
+
+            $stmt = $conn->prepare("INSERT INTO pending_users (fullName,email,password,verification_code) VALUES (?,?,?,?)");
+            $stmt->bind_param("ssss", $fullName, $email, $hashedPassword, $verificationCode);
 
             if ($stmt->execute()) {
-                include 'register_mail.php';
+                $_SESSION['pending_verification_email'] = $email;
+
                 if (sendVerificationEmail($fullName, $email, $verificationCode)) {
-                    $_SESSION['pending_verification_email'] = $email;
                     echo "<script>alert('Registration successful! Check your email for the verification code.'); window.location='verify.php';</script>";
                 } else {
-                    echo "<script>alert('Registration successful! But failed to send verification email.');</script>";
+                    echo "<script>alert('Registration saved but failed to send email.');</script>";
                 }
             } else {
-                echo "<script>alert('Registration failed. Please try again.');</script>";
+                echo "<script>alert('Registration failed.');</script>";
             }
+            $stmt->close();
         }
-        $stmt->close();
     }
 }
 $conn->close();
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -52,7 +60,6 @@ $conn->close();
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Register | eMentor</title>
 <style>
-/* your existing styles unchanged */
 * { margin:0; padding:0; box-sizing:border-box; }
 body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background:#e6e6e6; color: grey; line-height:1.6; }
 header { background: linear-gradient(135deg, #444, #666); color:white; padding:25px 0; text-align:center; box-shadow:0 4px 12px rgba(0,0,0,0.2); position:relative; }
@@ -142,4 +149,3 @@ overlay.addEventListener('click', () => {
 
 </body>
 </html>
-
